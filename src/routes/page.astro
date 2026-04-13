@@ -1,0 +1,273 @@
+---
+/**
+ * Catch-all docs page route — injected by the star-lite-docs integration.
+ * Loads content from ec_pages and renders with the docs layout.
+ */
+import { getDb } from "emdash/runtime";
+import { getSiteSettings } from "emdash";
+import { PortableText } from "emdash/ui";
+import { portableTextToMarkdown } from "emdash/client";
+import DocsLayout from "../DocsLayout.astro";
+import { preprocessBlocks, preprocessImages } from "../preprocess";
+import { ensurePagesCollection } from "../bootstrap";
+import { loadSidebarFromMenu } from "../menu-loader";
+import houston from "../assets/houston.webp";
+
+export const prerender = false;
+
+// Read config from virtual module (injected by integration)
+const { sidebar: staticSidebar, siteTitle: staticSiteTitle } = await import("virtual:star-lite-docs/config");
+
+// Prefer emdash's live site title (Settings → Site → Title) over the build-time
+// fallback in `starLiteDocs({ title })`. That way the admin can rename the site
+// without a redeploy, matching what the official emdash starter does in its
+// Base.astro.
+let siteTitle = staticSiteTitle;
+try {
+	const settings = await getSiteSettings();
+	if (settings?.title) siteTitle = settings.title;
+} catch {}
+
+const slug = Astro.params.slug || "index";
+
+const db = await getDb();
+
+// On first boot, apply the plugin's default seed so `pages` / `ec_pages` exist.
+await ensurePagesCollection(db);
+
+// Sidebar: static config takes precedence; otherwise pull from the emdash menu.
+const sidebar = staticSidebar ?? (await loadSidebarFromMenu());
+
+const row = await db
+	.selectFrom("ec_pages")
+	.selectAll()
+	.where("slug", "=", slug)
+	.where("deleted_at", "is", null)
+	.where("status", "=", "published")
+	.executeTakeFirst();
+
+// Friendly redirect: someone typed `/pages/<slug>` (the admin path) when the
+// public URL is just `/<slug>`. If the stripped slug matches a published page,
+// 301 to the canonical URL instead of showing a 404.
+if (!row) {
+	const stripped = slug.replace(/^(pages?|posts?)\//, "");
+	if (stripped !== slug) {
+		const existing = await db
+			.selectFrom("ec_pages")
+			.select("id")
+			.where("slug", "=", stripped)
+			.where("deleted_at", "is", null)
+			.where("status", "=", "published")
+			.executeTakeFirst();
+		if (existing) return Astro.redirect("/" + stripped, 301);
+	}
+}
+
+const notFound = !row;
+if (notFound) Astro.response.status = 404;
+
+let title: string;
+let ptBlocks: any[] = [];
+
+if (notFound && slug === "index") {
+	// Fresh-install homepage — render a themed splash with a hero pointing
+	// operators at the admin to publish their first page.
+	title = `Welcome to ${siteTitle}`;
+	const houstonSrc = typeof houston === "string" ? houston : (houston as any).src;
+	ptBlocks = [{
+		_type: "docs.hero",
+		_key: "empty-home-hero",
+		tagline: "A drop-in Starlight-style docs theme for EmDash CMS. Publish a page with slug “index” to replace this splash.",
+		imageSrc: houstonSrc,
+		imageAlt: "",
+		actionsJson: JSON.stringify([
+			{ text: "Create your first page", link: "/_emdash/admin/content/pages/new", icon: "right-arrow", variant: "primary" },
+			{ text: "Edit the sidebar menu", link: "/_emdash/admin/menus/docs-sidebar", variant: "secondary" },
+		]),
+	}];
+} else if (notFound) {
+	title = "Page not found";
+} else {
+	title = String(row!.title || "");
+	try { ptBlocks = JSON.parse(String(row!.content || "[]")); } catch {}
+}
+
+// Markdown editor mode — `?editor=markdown`, gated on authentication.
+// Unauthenticated hits just render the normal view as if the param weren't set.
+const user = (Astro.locals as any).user;
+const isMarkdownEditor =
+	!!user &&
+	!notFound &&
+	Astro.url.searchParams.get("editor") === "markdown";
+
+const markdownSource = isMarkdownEditor ? portableTextToMarkdown(ptBlocks) : "";
+
+const isEditing = Astro.cookies.get("emdash-edit-mode")?.value === "true";
+
+// Tag PT with edit metadata when in edit mode
+if (isEditing && !notFound && ptBlocks.length) {
+	const EMDASH_EDIT = Symbol.for("__emdash");
+	Object.defineProperty(ptBlocks, EMDASH_EDIT, {
+		value: { collection: "pages", id: String(row!.id), field: "content" },
+		enumerable: false,
+		configurable: true,
+	});
+}
+
+// Images always render — editing the markdown src in TipTap isn't useful.
+// Headings/tables only pre-process when not editing, so TipTap keeps them editable.
+if (isEditing) preprocessImages(ptBlocks);
+const headings = isEditing ? [] : preprocessBlocks(ptBlocks).headings;
+const toc = headings.filter(h => h.depth >= 2 && h.depth <= 3);
+
+// Splash mode — when the first block is a docs.hero, hide sidebar/TOC and widen content.
+const isSplash = ptBlocks.some((b: any) => b?._type === "docs.hero");
+
+// Expose page title to block components (e.g. DocsHero falls back to it when title is empty)
+(Astro.locals as any).pageTitle = title;
+---
+
+<DocsLayout title={title} toc={toc} slug={slug} sidebar={sidebar} siteTitle={siteTitle} splash={isSplash}>
+	<div class="sl-markdown-content">
+		{isMarkdownEditor ? (
+			<div class="sl-md-editor" data-page-id={String(row!.id)}>
+				<div class="sl-md-toolbar">
+					<strong>Editing as Markdown</strong>
+					<span class="sl-md-status" id="sl-md-status" />
+					<a class="sl-md-cancel" href={Astro.url.pathname}>Cancel</a>
+					<button type="button" id="sl-md-save" class="sl-md-save">Save</button>
+				</div>
+				<textarea id="sl-md-textarea" spellcheck="false">{markdownSource}</textarea>
+				<p class="sl-md-hint">
+					Custom blocks (hero, cards, tabs, …) appear as <code>&lt;!--ec:block …--&gt;</code> fences.
+					Edit them as JSON or leave them alone — they round-trip on save.
+				</p>
+			</div>
+		) : notFound && slug !== "index" ? (
+			<>
+				<p>No page matches <code>/{slug}</code>.</p>
+				<p><a href="/">← Back to home</a></p>
+			</>
+		) : (
+			<PortableText value={ptBlocks} />
+		)}
+	</div>
+</DocsLayout>
+
+{isMarkdownEditor && (
+	<>
+		<style>
+			.sl-md-editor {
+				display: flex;
+				flex-direction: column;
+				gap: 0.75rem;
+				min-height: 70vh;
+			}
+			.sl-md-toolbar {
+				display: flex;
+				align-items: center;
+				gap: 0.75rem;
+				padding: 0.5rem 0;
+			}
+			.sl-md-toolbar strong { flex: 0 0 auto; }
+			.sl-md-status {
+				flex: 1 1 auto;
+				font-size: var(--sl-text-sm, 0.875rem);
+				color: var(--sl-color-gray-3, #9ca3af);
+			}
+			.sl-md-status[data-state="error"] { color: #f87171; }
+			.sl-md-status[data-state="saved"] { color: #4ade80; }
+			.sl-md-cancel,
+			.sl-md-save {
+				font: inherit;
+				padding: 0.35rem 0.875rem;
+				border-radius: 0.375rem;
+				border: 1px solid var(--sl-color-hairline, #2b2f38);
+				cursor: pointer;
+				text-decoration: none;
+			}
+			.sl-md-cancel {
+				background: transparent;
+				color: var(--sl-color-white, #fff);
+			}
+			.sl-md-cancel:hover { background: rgba(255, 255, 255, 0.05); }
+			.sl-md-save {
+				background: var(--sl-color-text-accent, #8ab4f8);
+				color: var(--sl-color-black, #000);
+				border-color: transparent;
+			}
+			.sl-md-save:disabled { opacity: 0.6; cursor: progress; }
+			#sl-md-textarea {
+				flex: 1 1 auto;
+				min-height: 60vh;
+				width: 100%;
+				padding: 1rem;
+				border: 1px solid var(--sl-color-hairline, #2b2f38);
+				border-radius: 0.375rem;
+				background: var(--sl-color-bg, #0d1117);
+				color: var(--sl-color-white, #fff);
+				font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+				font-size: 0.875rem;
+				line-height: 1.55;
+				resize: vertical;
+			}
+			.sl-md-hint {
+				font-size: var(--sl-text-xs, 0.75rem);
+				color: var(--sl-color-gray-3, #9ca3af);
+			}
+		</style>
+		<script>
+			import { markdownToPortableText } from "emdash/client";
+
+			const editor = document.querySelector(".sl-md-editor") as HTMLElement | null;
+			const textarea = document.getElementById("sl-md-textarea") as HTMLTextAreaElement | null;
+			const saveBtn = document.getElementById("sl-md-save") as HTMLButtonElement | null;
+			const status = document.getElementById("sl-md-status") as HTMLElement | null;
+
+			function setStatus(text: string, state: "" | "saving" | "saved" | "error" = "") {
+				if (!status) return;
+				status.textContent = text;
+				if (state) status.dataset.state = state;
+				else delete status.dataset.state;
+			}
+
+			saveBtn?.addEventListener("click", async () => {
+				const pageId = editor?.dataset.pageId;
+				if (!pageId || !textarea) return;
+				saveBtn.disabled = true;
+				setStatus("Saving…", "saving");
+				try {
+					const blocks = markdownToPortableText(textarea.value);
+					const res = await fetch(`/_emdash/api/content/pages/${encodeURIComponent(pageId)}`, {
+						method: "PUT",
+						credentials: "same-origin",
+						headers: {
+							"Content-Type": "application/json",
+							"X-EmDash-Request": "1",
+						},
+						body: JSON.stringify({ data: { content: blocks } }),
+					});
+					// emdash returns HTTP 200 with `{ success: false, error: { code, message } }`
+					// when the write fails — must check the body, not just the status.
+					const body = await res.json().catch(() => null) as { success?: boolean; error?: { code?: string; message?: string } } | null;
+					if (!res.ok || body?.success === false) {
+						const msg = body?.error?.message || body?.error?.code || `HTTP ${res.status}`;
+						throw new Error(msg);
+					}
+					setStatus("Saved", "saved");
+					// Pop back into normal view so the user sees the rendered result.
+					setTimeout(() => {
+						const url = new URL(window.location.href);
+						url.searchParams.delete("editor");
+						window.location.href = url.toString();
+					}, 500);
+				} catch (err) {
+					console.error("Save failed:", err);
+					setStatus(`Save failed: ${err instanceof Error ? err.message : String(err)}`, "error");
+				} finally {
+					saveBtn.disabled = false;
+				}
+			});
+		</script>
+	</>
+)}

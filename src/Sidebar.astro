@@ -1,0 +1,337 @@
+---
+/**
+ * Custom Sidebar override that renders group labels as clickable links
+ * when the group's first entry is a link (the index/landing page).
+ */
+// Sidebar persister and mobile footer removed — no Starlight dependency
+
+interface SidebarLink {
+	type: 'link';
+	label: string;
+	href: string;
+	isCurrent: boolean;
+	badge: { variant: string; class?: string; text: string } | undefined;
+	attrs: Record<string, string | number | boolean | null | undefined> & { class?: string };
+}
+
+interface SidebarGroup {
+	type: 'group';
+	label: string;
+	entries: SidebarEntry[];
+	collapsed: boolean;
+	badge: { variant: string; class?: string; text: string } | undefined;
+}
+
+type SidebarEntry = SidebarLink | SidebarGroup;
+
+interface Props {
+	sublist?: SidebarEntry[];
+	nested?: boolean;
+}
+
+const sublist: SidebarEntry[] = Astro.props.sublist ?? [];
+const nested = Astro.props.nested ?? false;
+const isRoot = false; // No root wrapper needed without SidebarPersister
+
+/** Groups whose labels should be clickable links to a standalone page. */
+const LINKABLE_GROUPS = new Map<string, string>([
+	['Order Management System', '/order-management-system/'],
+	['Polaris Components', '/polaris-components/'],
+	['Web Components', '/polaris-components/web-components/'],
+	['Web Component Blocks', '/polaris-components/web-component-blocks/'],
+	['Web Component Patterns', '/polaris-components/web-component-patterns/'],
+	['R2 Catalog Application', '/r2-catalog/'],
+	['Card Shark', '/card-shark/'],
+	['Data Enhancement', '/data-enhancement/'],
+]);
+
+const currentPath = Astro.url.pathname;
+
+function isGroupPageCurrent(label: string): boolean {
+	const href = LINKABLE_GROUPS.get(label);
+	if (!href) return false;
+	return currentPath === href || currentPath === href.replace(/\/$/, '');
+}
+
+/** Set of all linkable group hrefs for fast lookup. */
+const linkableHrefs = new Set(LINKABLE_GROUPS.values());
+
+/** Filter out child links that duplicate a linkable group's page. */
+function filterLinkableOverviewPages(entries: SidebarEntry[]): SidebarEntry[] {
+	return entries.filter((entry) => {
+		if (entry.type === 'link') {
+			const normalized = entry.href.endsWith('/') ? entry.href : entry.href + '/';
+			return !linkableHrefs.has(normalized);
+		}
+		return true;
+	});
+}
+
+function flattenSidebar(entries: SidebarEntry[]): SidebarLink[] {
+	return entries.flatMap((entry) =>
+		entry.type === 'link' ? [entry] : flattenSidebar(entry.entries)
+	);
+}
+
+/** Check if this group or any nested group has a current linkable page. */
+function hasCurrentLinkableDescendant(entries: SidebarEntry[]): boolean {
+	return entries.some((entry) => {
+		if (entry.type === 'group') {
+			return isGroupPageCurrent(entry.label) || hasCurrentLinkableDescendant(entry.entries);
+		}
+		return false;
+	});
+}
+
+let _groupIndex = 0;
+function getNextIndex() { return _groupIndex++; }
+---
+
+{(
+	<ul class:list={{ 'top-level': !nested }}>
+		{
+			sublist.map((entry) => (
+				<li>
+					{entry.type === 'link' ? (
+						<a
+							href={entry.href}
+							aria-current={entry.isCurrent && 'page'}
+							class:list={[{ large: !nested }, entry.attrs.class]}
+							{...entry.attrs}
+						>
+							<span>{entry.label}</span>
+							{entry.badge && (
+								<span class:list={['sl-badge', entry.badge.variant, entry.badge.class]}>{entry.badge.text}</span>
+							)}
+						</a>
+					) : (
+						<details
+							open={flattenSidebar(entry.entries).some((i) => i.isCurrent) || isGroupPageCurrent(entry.label) || hasCurrentLinkableDescendant(entry.entries) || (!LINKABLE_GROUPS.has(entry.label) && !entry.collapsed)}
+						>
+							<summary>
+								{LINKABLE_GROUPS.has(entry.label) ? (
+									<a href={LINKABLE_GROUPS.get(entry.label)} aria-current={isGroupPageCurrent(entry.label) && 'page'} class:list={["group-link-wrap", { "group-link-active": isGroupPageCurrent(entry.label) }]} onclick="event.stopPropagation()">
+										<span class="group-label">
+											<span class="large">{entry.label}</span>
+											{entry.badge && (
+												<span class:list={['sl-badge', entry.badge.variant, entry.badge.class]}>{entry.badge.text}</span>
+											)}
+										</span>
+										<svg aria-hidden="true" class="caret" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+											<path d="m14.83 11.29-4.24-4.24a1 1 0 1 0-1.42 1.41L12.71 12l-3.54 3.54a1 1 0 0 0 0 1.41 1 1 0 0 0 .71.29 1 1 0 0 0 .71-.29l4.24-4.24a1.002 1.002 0 0 0 0-1.42Z"/>
+										</svg>
+									</a>
+								) : (
+									<>
+										<span class="group-label">
+											<span class="large">{entry.label}</span>
+											{entry.badge && (
+												<span class:list={['sl-badge', entry.badge.variant, entry.badge.class]}>{entry.badge.text}</span>
+											)}
+										</span>
+										<svg aria-hidden="true" class="caret" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+											<path d="m14.83 11.29-4.24-4.24a1 1 0 1 0-1.42 1.41L12.71 12l-3.54 3.54a1 1 0 0 0 0 1.41 1 1 0 0 0 .71.29 1 1 0 0 0 .71-.29l4.24-4.24a1.002 1.002 0 0 0 0-1.42Z"/>
+										</svg>
+									</>
+								)}
+							</summary>
+							{!LINKABLE_GROUPS.has(entry.label) && <sl-sidebar-restore data-index={getNextIndex()}></sl-sidebar-restore>}
+							{LINKABLE_GROUPS.has(entry.label) && <Fragment set:html={`<!-- idx ${getNextIndex()} -->`} />}
+							<Astro.self sublist={LINKABLE_GROUPS.has(entry.label) ? filterLinkableOverviewPages(entry.entries) : entry.entries} nested />
+						</details>
+					)}
+				</li>
+			))
+		}
+	</ul>
+)}
+
+<style>
+		ul {
+			--sl-sidebar-item-padding-inline: 0.5rem;
+			list-style: none;
+			padding: 0;
+		}
+
+		li {
+			overflow-wrap: anywhere;
+		}
+
+		ul ul li {
+			margin-inline-start: var(--sl-sidebar-item-padding-inline);
+			border-inline-start: 1px solid var(--sl-color-hairline-light);
+			padding-inline-start: var(--sl-sidebar-item-padding-inline);
+			position: relative;
+		}
+
+		/* Polaris-style line connector: vertical line on items above the selected one */
+		ul ul li:has(~ li > [aria-current='page']) {
+			border-inline-start-color: var(--sl-color-gray-3);
+		}
+
+		/* Polaris-style pointer: curved connector at the selected item */
+		ul ul li:has(> [aria-current='page']) {
+			border-inline-start-color: transparent;
+		}
+
+		ul ul li:has(> [aria-current='page'])::before {
+			content: '';
+			position: absolute;
+			inset-inline-start: -1px;
+			top: 0;
+			width: 0.75rem;
+			height: 50%;
+			border-inline-start: 1.5px solid var(--sl-color-gray-3);
+			border-bottom: 1.5px solid var(--sl-color-gray-3);
+			border-end-start-radius: 0.5rem;
+		}
+
+		/* Arrow tip at the end of the connector */
+		ul ul li:has(> [aria-current='page'])::after {
+			content: '';
+			position: absolute;
+			inset-inline-start: 0.6rem;
+			top: calc(50% - 0.25rem);
+			width: 0;
+			height: 0;
+			border-top: 0.25rem solid transparent;
+			border-bottom: 0.25rem solid transparent;
+			border-inline-start: 0.3rem solid var(--sl-color-gray-3);
+		}
+
+		.large {
+			font-size: var(--sl-text-lg);
+			font-weight: 600;
+			color: var(--sl-color-white);
+		}
+
+		.top-level > li + li {
+			margin-top: 0.75rem;
+		}
+
+		summary {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			padding: 0.2em var(--sl-sidebar-item-padding-inline);
+			line-height: 1.4;
+			cursor: pointer;
+			user-select: none;
+		}
+		summary::marker,
+		summary::-webkit-details-marker {
+			display: none;
+		}
+
+		.caret {
+			transition: transform 0.2s ease-in-out;
+			flex-shrink: 0;
+			font-size: 1.25rem;
+			width: 1em;
+			height: 1em;
+		}
+		:global([dir='rtl']) .caret {
+			transform: rotateZ(180deg);
+		}
+		[open] > summary .caret {
+			transform: rotateZ(90deg);
+		}
+
+		a {
+			display: block;
+			border-radius: 0.25rem;
+			text-decoration: none;
+			color: var(--sl-color-gray-2);
+			padding: 0.3em var(--sl-sidebar-item-padding-inline);
+			line-height: 1.4;
+		}
+
+		a:hover,
+		a:focus {
+			color: var(--sl-color-white);
+		}
+
+		ul ul a:hover,
+		ul ul a:focus {
+			background-color: var(--sl-color-gray-6, rgba(255, 255, 255, 0.07));
+		}
+
+		/* Top-level links: keep the blue bar */
+		.top-level > li > [aria-current='page'],
+		.top-level > li > [aria-current='page']:hover,
+		.top-level > li > [aria-current='page']:focus {
+			font-weight: 600;
+			color: var(--sl-color-text-invert);
+			background-color: var(--sl-color-text-accent);
+		}
+
+		/* Nested child links: Polaris-style subtle highlight */
+		ul ul [aria-current='page'],
+		ul ul [aria-current='page']:hover,
+		ul ul [aria-current='page']:focus {
+			font-weight: 600;
+			color: var(--sl-color-white);
+			background-color: var(--sl-color-gray-6, rgba(255, 255, 255, 0.07));
+			border-radius: 0.25rem;
+		}
+
+		.group-link-wrap {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			width: 100%;
+			padding: 0.2em var(--sl-sidebar-item-padding-inline);
+			border-radius: 0.25rem;
+			background: none;
+			color: inherit;
+			text-decoration: none;
+		}
+
+		.group-link-wrap:hover,
+		.group-link-wrap:focus {
+			background-color: var(--sl-color-gray-6, rgba(255, 255, 255, 0.07));
+			color: inherit;
+			text-decoration: none;
+		}
+
+		.group-link-active {
+			border-radius: 0.25rem;
+			padding: 0.2em var(--sl-sidebar-item-padding-inline);
+			background-color: var(--sl-color-gray-6, rgba(255, 255, 255, 0.07));
+		}
+
+		.group-link-active .large {
+			color: var(--sl-color-white);
+		}
+
+		.group-link-active .caret {
+			color: var(--sl-color-white);
+		}
+
+		.group-link-active:hover .large,
+		.group-link-active:focus .large {
+			text-decoration: none;
+		}
+
+		.group-link-active:hover,
+		.group-link-active:focus {
+			background-color: var(--sl-color-gray-6, rgba(255, 255, 255, 0.07));
+		}
+
+		a > *:not(:last-child),
+		.group-label > *:not(:last-child) {
+			margin-inline-end: 0.25em;
+		}
+
+		@media (min-width: 50rem) {
+			.top-level > li + li {
+				margin-top: 0.5rem;
+			}
+			.large {
+				font-size: var(--sl-text-base);
+			}
+			a {
+				font-size: var(--sl-text-sm);
+			}
+		}
+</style>

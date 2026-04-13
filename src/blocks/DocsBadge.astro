@@ -1,0 +1,72 @@
+---
+export interface Props {
+  node: {
+    id?: string;
+    text?: string;
+    variant?: 'default' | 'note' | 'tip' | 'caution' | 'danger' | 'success';
+    size?: 'small' | 'medium' | 'large';
+  };
+}
+
+const { node } = Astro.props;
+const { text, variant = 'default', size = 'medium' } = node;
+---
+
+{text && (
+  <span class:list={['emdash-block-wrap', 'sl-badge', variant, size]} data-block-type="star-lite.badge" data-block-props={JSON.stringify(node)}>{text}</span>
+)}
+
+<style>
+  .sl-badge {
+    display: inline-block;
+    border: 1px solid var(--sl-color-border-badge);
+    border-radius: 0.25rem;
+    font-family: var(--sl-font-system-mono);
+    line-height: normal;
+    color: var(--sl-color-text-badge);
+    background-color: var(--sl-color-bg-badge);
+    overflow-wrap: anywhere;
+  }
+  .default {
+    --sl-color-bg-badge: var(--sl-color-accent-low);
+    --sl-color-border-badge: var(--sl-color-accent);
+    --sl-color-text-badge: #fff;
+  }
+  .note {
+    --sl-color-bg-badge: var(--sl-color-blue-low);
+    --sl-color-border-badge: var(--sl-color-blue);
+    --sl-color-text-badge: #fff;
+  }
+  .danger {
+    --sl-color-bg-badge: var(--sl-color-red-low);
+    --sl-color-border-badge: var(--sl-color-red);
+    --sl-color-text-badge: #fff;
+  }
+  .success {
+    --sl-color-bg-badge: var(--sl-color-green-low);
+    --sl-color-border-badge: var(--sl-color-green);
+    --sl-color-text-badge: #fff;
+  }
+  .caution {
+    --sl-color-bg-badge: var(--sl-color-orange-low);
+    --sl-color-border-badge: var(--sl-color-orange);
+    --sl-color-text-badge: #fff;
+  }
+  .tip {
+    --sl-color-bg-badge: var(--sl-color-purple-low);
+    --sl-color-border-badge: var(--sl-color-purple);
+    --sl-color-text-badge: #fff;
+  }
+  .small {
+    font-size: var(--sl-text-xs);
+    padding: 0.125rem 0.25rem;
+  }
+  .medium {
+    font-size: var(--sl-text-sm);
+    padding: 0.175rem 0.35rem;
+  }
+  .large {
+    font-size: var(--sl-text-base);
+    padding: 0.225rem 0.45rem;
+  }
+</style>

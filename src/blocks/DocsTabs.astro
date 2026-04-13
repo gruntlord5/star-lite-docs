@@ -1,0 +1,168 @@
+---
+import { blockMarkdownToHtml } from './inline-markdown';
+import { Code } from 'astro-expressive-code/components';
+
+export interface Props {
+  node: {
+    id?: string;
+    tabsJson?: string;
+  };
+}
+
+const { node } = Astro.props;
+const { tabsJson } = node;
+
+interface TabItem {
+  label: string;
+  icon?: string;
+  content: string;
+}
+
+const tabs: TabItem[] = tabsJson ? JSON.parse(tabsJson) : [];
+const tabsetId = `tabs-${node.id || Math.random().toString(36).slice(2)}`;
+
+// Precompute code fence match for each tab
+const tabRenders = tabs.map((tab) => {
+  const m = tab.content.trim().match(/^```(\w*)\n([\s\S]*)\n```\s*$/);
+  return m ? { type: 'code' as const, lang: m[1] || 'text', code: m[2] } : { type: 'html' as const, html: tab.content.trim().startsWith('<') ? tab.content : blockMarkdownToHtml(tab.content) };
+});
+---
+
+{tabs.length > 0 && (
+  <starlight-tabs class="emdash-block-wrap" data-block-type="star-lite.tabs" data-block-props={JSON.stringify(node).replace(/</g, '\\u003c').replace(/>/g, '\\u003e')}>
+    <div class="tablist-wrapper not-content">
+      <ul role="tablist">
+        {tabs.map((tab, idx) => {
+          const panelId = `${tabsetId}-panel-${idx}`;
+          const tabId = `${tabsetId}-tab-${idx}`;
+          return (
+            <li role="presentation" class="tab">
+              <a
+                role="tab"
+                href={`#${panelId}`}
+                id={tabId}
+                aria-selected={idx === 0 ? 'true' : 'false'}
+                tabindex={idx !== 0 ? -1 : 0}
+              >
+                {tab.label}
+              </a>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+    {tabs.map((tab, idx) => {
+      const panelId = `${tabsetId}-panel-${idx}`;
+      const tabId = `${tabsetId}-tab-${idx}`;
+      return (
+        <div
+          role="tabpanel"
+          id={panelId}
+          aria-labelledby={tabId}
+          hidden={idx !== 0}
+        >
+          {tabRenders[idx].type === 'code' ? (
+            <Code code={tabRenders[idx].code} lang={tabRenders[idx].lang} />
+          ) : (
+            <Fragment set:html={tabRenders[idx].html} />
+          )}
+        </div>
+      );
+    })}
+  </starlight-tabs>
+)}
+
+<style>
+  starlight-tabs {
+    display: block;
+  }
+  .tablist-wrapper {
+    overflow-x: auto;
+  }
+  [role='tablist'] {
+    display: flex;
+    list-style: none;
+    border-bottom: 2px solid var(--sl-color-gray-5);
+    padding: 0;
+  }
+  .tab {
+    display: flex;
+  }
+  .tab > [role='tab'] {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    line-height: var(--sl-line-height-headings);
+    padding: 0.275rem 1.25rem;
+    text-decoration: none;
+    box-shadow: 0 2px 0 var(--sl-color-gray-5);
+    color: var(--sl-color-gray-3);
+    outline-offset: var(--sl-outline-offset-inside);
+    overflow-wrap: initial;
+  }
+  .tab [role='tab'][aria-selected='true'] {
+    box-shadow: 0 2px 0 var(--sl-color-text-accent);
+    color: var(--sl-color-white);
+    font-weight: 600;
+  }
+  .tablist-wrapper ~ :global([role='tabpanel']) {
+    margin-top: 1rem;
+  }
+</style>
+
+<script>
+  class StarlightTabs extends HTMLElement {
+    tabs: HTMLAnchorElement[];
+    panels: HTMLElement[];
+
+    constructor() {
+      super();
+      const tablist = this.querySelector<HTMLUListElement>('[role="tablist"]')!;
+      this.tabs = [...tablist.querySelectorAll<HTMLAnchorElement>('[role="tab"]')];
+      this.panels = [...this.querySelectorAll<HTMLElement>(':scope > [role="tabpanel"]')];
+
+      this.tabs.forEach((tab, i) => {
+        tab.addEventListener('click', (e) => {
+          e.preventDefault();
+          const currentTab = tablist.querySelector('[aria-selected="true"]');
+          if (e.currentTarget !== currentTab) {
+            this.switchTab(e.currentTarget as HTMLAnchorElement, i);
+          }
+        });
+
+        tab.addEventListener('keydown', (e) => {
+          const index = this.tabs.indexOf(e.currentTarget as any);
+          const nextIndex =
+            e.key === 'ArrowLeft' ? index - 1
+            : e.key === 'ArrowRight' ? index + 1
+            : e.key === 'Home' ? 0
+            : e.key === 'End' ? this.tabs.length - 1
+            : null;
+          if (nextIndex === null) return;
+          if (this.tabs[nextIndex]) {
+            e.preventDefault();
+            this.switchTab(this.tabs[nextIndex], nextIndex);
+          }
+        });
+      });
+    }
+
+    switchTab(newTab: HTMLAnchorElement | null | undefined, index: number) {
+      if (!newTab) return;
+      this.tabs.forEach((tab) => {
+        tab.setAttribute('aria-selected', 'false');
+        tab.setAttribute('tabindex', '-1');
+      });
+      this.panels.forEach((oldPanel) => {
+        oldPanel.hidden = true;
+      });
+      const newPanel = this.panels[index];
+      if (newPanel) newPanel.hidden = false;
+      newTab.removeAttribute('tabindex');
+      newTab.setAttribute('aria-selected', 'true');
+      newTab.focus();
+    }
+  }
+
+  customElements.define('starlight-tabs', StarlightTabs);
+</script>

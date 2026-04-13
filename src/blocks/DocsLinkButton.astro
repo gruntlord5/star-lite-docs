@@ -1,0 +1,66 @@
+---
+import Icon from '../Icon.astro';
+import type { Icons } from '../Icons';
+
+export interface Props {
+  node: {
+    id?: string;
+    text?: string;
+    href?: string;
+    icon?: string;
+    iconPlacement?: 'start' | 'end';
+    variant?: 'primary' | 'secondary' | 'minimal';
+  };
+}
+
+const { node } = Astro.props;
+const { text, href, icon, iconPlacement = 'end', variant = 'primary' } = node;
+---
+
+{text && href && (
+  <a class:list={['emdash-block-wrap', 'sl-link-button not-content', variant]} href={href} data-block-type="star-lite.linkButton" data-block-props={JSON.stringify(node)}>
+    {icon && iconPlacement === 'start' && <Icon name={icon as keyof typeof Icons} size="1.5rem" />}
+    {text}
+    {icon && iconPlacement === 'end' && <Icon name={icon as keyof typeof Icons} size="1.5rem" />}
+  </a>
+)}
+
+<style>
+  .sl-link-button {
+    align-items: center;
+    border: 1px solid transparent;
+    border-radius: 999rem;
+    display: inline-flex;
+    font-size: var(--sl-text-sm);
+    gap: 0.5em;
+    line-height: 1.1875;
+    outline-offset: 0.25rem;
+    padding: 0.4375rem 1.125rem;
+    text-decoration: none;
+  }
+  .sl-link-button.primary {
+    background: var(--sl-color-text-accent);
+    border-color: var(--sl-color-text-accent);
+    color: var(--sl-color-black);
+  }
+  .sl-link-button.primary:hover {
+    color: var(--sl-color-black);
+  }
+  .sl-link-button.secondary {
+    border-color: inherit;
+    color: var(--sl-color-white);
+  }
+  .sl-link-button.minimal {
+    color: var(--sl-color-white);
+    padding-inline: 0;
+  }
+  .sl-link-button :global(svg) {
+    flex-shrink: 0;
+  }
+  @media (min-width: 50rem) {
+    .sl-link-button {
+      font-size: var(--sl-text-base);
+      padding: 0.9375rem 1.25rem;
+    }
+  }
+</style>

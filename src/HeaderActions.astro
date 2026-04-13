@@ -1,0 +1,95 @@
+---
+/**
+ * Header actions — Copy-MD and Edit-as-MD buttons.
+ *
+ * Plain HTML, zero external deps. Renders nothing in a frame where there's
+ * no current page slug (e.g. the setup wizard at /_emdash/**).
+ */
+const pathname = Astro.url.pathname;
+const slug = pathname.replace(/^\/|\/$/g, "");
+const isMarkdownEditor = Astro.url.searchParams.get("editor") === "markdown";
+const hide = pathname.startsWith("/_emdash/");
+---
+
+{!hide && (
+	<div class="header-actions">
+		<button id="copy-page-btn" type="button" class="ha-btn ha-btn-primary" data-slug={slug} aria-label="Copy page as Markdown">
+			Copy Page MD
+		</button>
+		<a href={isMarkdownEditor ? pathname : `${pathname}?editor=markdown`} class="ha-btn ha-btn-secondary">
+			{isMarkdownEditor ? "Edit Visually" : "Edit as MD"}
+		</a>
+		<span id="copy-toast" class="ha-toast" role="status" aria-live="polite" hidden />
+	</div>
+)}
+
+<style>
+	.header-actions {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		position: relative;
+	}
+	.ha-btn {
+		font: inherit;
+		padding: 0.35rem 0.75rem;
+		border-radius: 0.375rem;
+		border: 1px solid var(--sl-color-hairline, #2b2f38);
+		cursor: pointer;
+		text-decoration: none;
+		font-size: var(--sl-text-sm, 0.875rem);
+		line-height: 1.25;
+	}
+	.ha-btn-primary {
+		background: var(--sl-color-text-accent, #8ab4f8);
+		color: var(--sl-color-black, #000);
+		border-color: transparent;
+	}
+	.ha-btn-secondary {
+		background: transparent;
+		color: var(--sl-color-white, #fff);
+	}
+	.ha-btn-secondary:hover {
+		background: rgba(255, 255, 255, 0.05);
+	}
+	.ha-toast {
+		position: absolute;
+		top: calc(100% + 0.25rem);
+		right: 0;
+		padding: 0.25rem 0.625rem;
+		border-radius: 0.25rem;
+		background: var(--sl-color-bg-nav, #17191e);
+		color: var(--sl-color-white, #fff);
+		border: 1px solid var(--sl-color-hairline, #2b2f38);
+		font-size: var(--sl-text-xs, 0.75rem);
+	}
+	.ha-toast[data-state="error"] { color: #f87171; }
+</style>
+
+<script>
+	const btn = document.getElementById("copy-page-btn") as HTMLButtonElement | null;
+	const toast = document.getElementById("copy-toast") as HTMLSpanElement | null;
+
+	function flash(text: string, kind: "ok" | "error" = "ok") {
+		if (!toast) return;
+		toast.textContent = text;
+		toast.hidden = false;
+		toast.dataset.state = kind === "error" ? "error" : "";
+		setTimeout(() => { toast.hidden = true; }, 1600);
+	}
+
+	btn?.addEventListener("click", async () => {
+		const slug = btn.dataset.slug;
+		if (!slug) return;
+		try {
+			const res = await fetch(`/api/get-markdown?slug=${encodeURIComponent(slug)}`);
+			if (!res.ok) throw new Error(String(res.status));
+			const md = await res.text();
+			await navigator.clipboard.writeText(md);
+			flash("Copied");
+		} catch (e) {
+			console.error("Copy page MD failed:", e);
+			flash("Failed", "error");
+		}
+	});
+</script>

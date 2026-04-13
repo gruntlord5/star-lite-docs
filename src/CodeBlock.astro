@@ -1,0 +1,8 @@
+---
+import { Code } from 'astro-expressive-code/components';
+
+const { node } = Astro.props;
+if (!node?.code) return null;
+---
+
+<Code code={node.code} lang={node.language || 'sql'} />

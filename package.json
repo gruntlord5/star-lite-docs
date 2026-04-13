@@ -1,0 +1,53 @@
+{
+	"name": "star-lite-docs",
+	"version": "0.1.0",
+	"description": "Starlight-style documentation theme for EmDash CMS — Astro integration + emdash plugin in one package.",
+	"license": "MIT",
+	"author": "gruntlord5",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/gruntlord5/star-lite-docs.git"
+	},
+	"homepage": "https://github.com/gruntlord5/star-lite-docs#readme",
+	"bugs": "https://github.com/gruntlord5/star-lite-docs/issues",
+	"type": "module",
+	"keywords": [
+		"astro",
+		"astro-integration",
+		"astro-component",
+		"emdash",
+		"emdash-plugin",
+		"docs",
+		"documentation",
+		"starlight",
+		"cms"
+	],
+	"files": [
+		"src",
+		"README.md",
+		"LICENSE"
+	],
+	"exports": {
+		".": "./src/index.ts",
+		"./integration": "./src/integration.ts",
+		"./emdash-plugin": "./src/emdash-plugin.ts",
+		"./layout": "./src/DocsLayout.astro",
+		"./blocks": "./src/blocks/index.ts",
+		"./seed": "./src/seed.ts",
+		"./package.json": "./package.json"
+	},
+	"peerDependencies": {
+		"astro": "^6.0.0",
+		"emdash": ">=0.1.0 <1.0.0"
+	},
+	"dependencies": {
+		"astro-expressive-code": "^0.41.0"
+	},
+	"devDependencies": {
+		"@types/node": "^20",
+		"typescript": "^5"
+	},
+	"publishConfig": {
+		"access": "public"
+	}
+}

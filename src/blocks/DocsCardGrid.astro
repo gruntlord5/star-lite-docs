@@ -1,0 +1,94 @@
+---
+export interface Props {
+  node: {
+    id?: string;
+    cardsJson?: string;
+    stagger?: string;
+  };
+}
+
+const { node } = Astro.props;
+const { cardsJson, stagger } = node;
+
+interface CardItem {
+  title: string;
+  href?: string;
+  description?: string;
+}
+
+const cards: CardItem[] = cardsJson ? JSON.parse(cardsJson) : [];
+const isStagger = stagger === 'true';
+---
+
+<div class:list={['emdash-block-wrap', 'card-grid', { stagger: isStagger }]} data-block-type="star-lite.cardGrid" data-block-props={JSON.stringify(node)}>
+  {cards.map((card) => (
+    <div class="sl-link-card">
+      <span class="sl-flex stack">
+        <a href={card.href}>
+          <span class="title" set:html={card.title} />
+        </a>
+        {card.description && <span class="description" set:html={card.description} />}
+      </span>
+    </div>
+  ))}
+</div>
+
+<style>
+  .card-grid {
+    display: grid;
+    grid-template-columns: 100%;
+    gap: 1rem;
+  }
+  .card-grid > * {
+    margin-top: 0 !important;
+  }
+  @media (min-width: 50rem) {
+    .card-grid {
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+    }
+    .stagger {
+      --stagger-height: 5rem;
+      padding-bottom: var(--stagger-height);
+    }
+    .stagger > *:nth-child(2n) {
+      transform: translateY(var(--stagger-height));
+    }
+  }
+  .sl-link-card {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 0.5rem;
+    border: 1px solid var(--sl-color-gray-5);
+    border-radius: 0.5rem;
+    padding: 1rem;
+    box-shadow: var(--sl-shadow-sm);
+    position: relative;
+  }
+  .sl-link-card:hover {
+    background: var(--sl-color-gray-7, var(--sl-color-gray-6));
+    border-color: var(--sl-color-gray-2);
+  }
+  a {
+    text-decoration: none;
+    line-height: var(--sl-line-height-headings);
+  }
+  a::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+  }
+  .stack {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  .title {
+    color: var(--sl-color-white);
+    font-weight: 600;
+    font-size: var(--sl-text-lg);
+  }
+  .description {
+    color: var(--sl-color-gray-3);
+    line-height: 1.5;
+  }
+</style>

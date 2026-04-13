@@ -1,0 +1,29 @@
+---
+import Icon from '../Icon.astro';
+import { blockMarkdownToHtml } from './inline-markdown';
+
+export interface Props {
+  node: {
+    id?: string;
+    type?: 'note' | 'tip' | 'caution' | 'danger';
+    title?: string;
+    content?: string;
+  };
+}
+
+const { node } = Astro.props;
+const { type = 'note', title, content } = node;
+
+const icons = { note: 'information', tip: 'rocket', caution: 'warning', danger: 'error' } as const;
+const displayTitle = title || type.charAt(0).toUpperCase() + type.slice(1);
+const renderedContent = content ? blockMarkdownToHtml(content) : '';
+---
+
+<aside aria-label={displayTitle} class={`emdash-block-wrap starlight-aside starlight-aside--${type}`} data-block-type="star-lite.aside" data-block-props={JSON.stringify(node)}>
+  <p class="starlight-aside__title" aria-hidden="true">
+    <Icon name={icons[type]} class="starlight-aside__icon" />{displayTitle}
+  </p>
+  {renderedContent && (
+    <div class="starlight-aside__content" set:html={renderedContent} />
+  )}
+</aside>

@@ -1,0 +1,21 @@
+---
+import Icon from '../Icon.astro';
+import type { Icons } from '../Icons';
+
+export interface Props {
+  node: {
+    id?: string;
+    name?: string;
+    label?: string;
+    color?: string;
+    size?: string;
+  };
+}
+
+const { node } = Astro.props;
+const { name, label, color, size } = node;
+---
+
+{name && (
+  <Icon name={name as keyof typeof Icons} label={label} color={color} size={size} />
+)}

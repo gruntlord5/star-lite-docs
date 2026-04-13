@@ -1,0 +1,216 @@
+---
+import Icon from "../Icon.astro";
+import type { Icons } from "../Icons";
+
+export interface Props {
+	node: {
+		title?: string;
+		tagline?: string;
+		imageSrc?: string;
+		imageAlt?: string;
+		actionsJson?: string;
+	};
+}
+
+const { node } = Astro.props;
+const { title, tagline, imageSrc, imageAlt } = node;
+
+type Action = { text: string; link: string; icon?: string; variant?: "primary" | "secondary" | "minimal" };
+let actions: Action[] = [];
+try {
+	if (node.actionsJson) actions = JSON.parse(node.actionsJson);
+} catch {}
+
+const pageTitle: string | undefined = (Astro.locals as any)?.pageTitle;
+const displayTitle = title && title.trim() ? title : pageTitle;
+---
+
+<div class="emdash-block-wrap hero" data-block-type="docs.hero" data-block-props={JSON.stringify(node)}>
+	{imageSrc && (
+		<img src={imageSrc} alt={imageAlt ?? ""} />
+	)}
+	<div class="sl-flex stack">
+		<div class="sl-flex copy">
+			<h1 id="_top" data-hero-field="title" data-hero-placeholder="Page title">{displayTitle ?? ""}</h1>
+			<div class="tagline" data-hero-field="tagline" data-hero-placeholder="Tagline">{tagline ?? ""}</div>
+		</div>
+		{actions.length > 0 && (
+			<div class="sl-flex actions" data-hero-actions>
+				{actions.map((action, idx) => (
+					<a
+						href={action.link}
+						class:list={["sl-flex", "action", action.variant ?? "primary"]}
+						data-hero-action-index={idx}
+					>
+						<span data-hero-action-field="text">{action.text}</span>
+						{action.icon && <Icon name={action.icon as keyof typeof Icons} size="1.2em" />}
+					</a>
+				))}
+			</div>
+		)}
+	</div>
+</div>
+
+<script>
+	function initHeroInlineEdit() {
+		const toolbar = document.getElementById("emdash-toolbar");
+		const editMode = toolbar?.dataset.editMode === "true";
+
+		document.querySelectorAll<HTMLElement>('.emdash-block-wrap[data-block-type="docs.hero"]').forEach(wrap => {
+			const syncProps = (patch: Record<string, unknown>) => {
+				let props: Record<string, unknown> = {};
+				try { props = JSON.parse(wrap.dataset.blockProps || "{}"); } catch {}
+				Object.assign(props, patch);
+				wrap.dataset.blockProps = JSON.stringify(props);
+			};
+
+			const setupText = (el: HTMLElement, field: string) => {
+				if (editMode) {
+					el.setAttribute("contenteditable", "plaintext-only");
+					if (!el.dataset.heroBound) {
+						el.addEventListener("input", () => {
+							syncProps({ [field]: el.textContent ?? "" });
+						});
+						el.dataset.heroBound = "1";
+					}
+				} else {
+					el.removeAttribute("contenteditable");
+				}
+			};
+
+			wrap.querySelectorAll<HTMLElement>("[data-hero-field]").forEach(el => {
+				setupText(el, el.dataset.heroField!);
+			});
+
+			// Action button text — sync back into the actionsJson array
+			const actionEls = wrap.querySelectorAll<HTMLElement>("[data-hero-action-index]");
+			const syncActions = () => {
+				let props: Record<string, unknown> = {};
+				try { props = JSON.parse(wrap.dataset.blockProps || "{}"); } catch {}
+				let actions: Array<Record<string, unknown>> = [];
+				try { actions = JSON.parse((props.actionsJson as string) || "[]"); } catch {}
+				actionEls.forEach(a => {
+					const idx = Number(a.dataset.heroActionIndex);
+					const textEl = a.querySelector<HTMLElement>('[data-hero-action-field="text"]');
+					if (actions[idx] && textEl) actions[idx].text = textEl.textContent ?? "";
+				});
+				syncProps({ actionsJson: JSON.stringify(actions) });
+			};
+			actionEls.forEach(a => {
+				const textEl = a.querySelector<HTMLElement>('[data-hero-action-field="text"]');
+				if (!textEl) return;
+				if (editMode) {
+					textEl.setAttribute("contenteditable", "plaintext-only");
+					a.addEventListener("click", e => {
+						if ((e.target as HTMLElement).hasAttribute("contenteditable")) e.preventDefault();
+					});
+					if (!textEl.dataset.heroBound) {
+						textEl.addEventListener("input", syncActions);
+						textEl.dataset.heroBound = "1";
+					}
+				} else {
+					textEl.removeAttribute("contenteditable");
+				}
+			});
+		});
+	}
+
+	initHeroInlineEdit();
+	const toolbar = document.getElementById("emdash-toolbar");
+	if (toolbar) {
+		new MutationObserver(initHeroInlineEdit).observe(toolbar, { attributes: true, attributeFilter: ["data-edit-mode"] });
+	}
+	document.addEventListener("astro:page-load", initHeroInlineEdit);
+</script>
+
+<style>
+	.hero {
+		display: grid;
+		align-items: center;
+		gap: 1rem;
+		padding-bottom: 1rem;
+	}
+	.hero > img {
+		object-fit: contain;
+		width: min(70%, 20rem);
+		height: auto;
+		margin-inline: auto;
+	}
+	.stack {
+		flex-direction: column;
+		gap: clamp(1.5rem, calc(1.5rem + 1vw), 2rem);
+		text-align: center;
+	}
+	.copy {
+		flex-direction: column;
+		gap: 1rem;
+		align-items: center;
+	}
+	.copy > * { max-width: 50ch; }
+	h1 {
+		font-size: clamp(var(--sl-text-3xl), calc(0.25rem + 5vw), var(--sl-text-6xl));
+		line-height: var(--sl-line-height-headings);
+		font-weight: 600;
+		color: var(--sl-color-white);
+	}
+	.tagline {
+		font-size: clamp(var(--sl-text-base), calc(0.0625rem + 2vw), var(--sl-text-xl));
+		color: var(--sl-color-gray-2);
+	}
+	.actions {
+		gap: 1rem 2rem;
+		flex-wrap: wrap;
+		justify-content: center;
+	}
+	.action {
+		gap: 0.5em;
+		align-items: center;
+		padding: 0.5rem 1.125rem;
+		border-radius: 999rem;
+		font-size: var(--sl-text-sm);
+		line-height: 1.1875;
+		text-decoration: none;
+		box-sizing: border-box;
+		white-space: nowrap;
+	}
+	.action.primary {
+		background: var(--sl-color-text-accent);
+		color: var(--sl-color-black);
+		border: 1px solid transparent;
+	}
+	.action.primary:hover { color: var(--sl-color-black); }
+	.action.secondary {
+		border: 1px solid var(--sl-color-white);
+		color: var(--sl-color-white);
+	}
+	.action.minimal {
+		color: var(--sl-color-white);
+		border: 1px solid transparent;
+	}
+	.action.minimal:hover { background: var(--sl-color-gray-6); }
+
+	@media (min-width: 50rem) {
+		.hero {
+			grid-template-columns: 7fr 4fr;
+			gap: 3%;
+			padding-block: clamp(2.5rem, calc(1rem + 10vmin), 6rem);
+		}
+		.hero > img { order: 2; width: min(100%, 25rem); }
+		.stack { text-align: start; }
+		.copy { align-items: flex-start; }
+		.actions { justify-content: flex-start; }
+	}
+
+	[contenteditable="plaintext-only"] { outline: none; }
+	[contenteditable="plaintext-only"]:focus-visible {
+		outline: 2px solid var(--sl-color-text-accent);
+		outline-offset: 0.25rem;
+		border-radius: 0.25rem;
+	}
+	[data-hero-field]:empty::before,
+	[data-hero-action-field]:empty::before {
+		content: attr(data-hero-placeholder);
+		color: var(--sl-color-gray-4);
+		font-style: italic;
+	}
+</style>

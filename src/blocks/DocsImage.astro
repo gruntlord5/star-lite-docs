@@ -1,0 +1,27 @@
+---
+export interface Props {
+	node: {
+		src?: string;
+		alt?: string;
+	};
+}
+
+const { node } = Astro.props;
+const { src, alt } = node;
+---
+
+{src && (
+	<span class="emdash-block-wrap docs-image" data-block-type="docs.image" data-block-props={JSON.stringify(node)}>
+		<img src={src} alt={alt ?? ""} />
+	</span>
+)}
+
+<style>
+	.docs-image {
+		display: block;
+	}
+	.docs-image img {
+		max-width: 100%;
+		height: auto;
+	}
+</style>
