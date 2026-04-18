@@ -8,4 +8,4 @@ export interface Props {
 const { node } = Astro.props;
 ---
 
-{node.html && <Fragment set:html={node.html} />}
+{node.html && <div class="emdash-block-wrap" data-block-type="docs.html" data-block-props={JSON.stringify(node)} data-sl-edit="html" set:html={node.html} />}

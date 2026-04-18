@@ -37,6 +37,31 @@ export function preprocessImages(ptBlocks: any[]): void {
 	}
 }
 
+function renderSpan(child: any, markDefs: any[] = []): string {
+	let text = (child.text || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+	if (!text) return "";
+	const marks: string[] = child.marks || [];
+	for (const mark of marks) {
+		if (mark === "strong") { text = `<strong>${text}</strong>`; continue; }
+		if (mark === "em") { text = `<em>${text}</em>`; continue; }
+		if (mark === "code") { text = `<code>${text}</code>`; continue; }
+		if (mark === "underline") { text = `<u>${text}</u>`; continue; }
+		if (mark === "strikethrough") { text = `<s>${text}</s>`; continue; }
+		const def = markDefs.find((d: any) => d._key === mark);
+		if (def?._type === "link") { text = `<a href="${def.href || ""}">${text}</a>`; }
+	}
+	return text;
+}
+
+function blockToHtml(b: any): string {
+	const children = (b.children || []).map((c: any) => renderSpan(c, b.markDefs)).join("");
+	const style = b.style || "normal";
+	if (style === "normal") return `<p>${children}</p>`;
+	if (style === "blockquote") return `<blockquote><p>${children}</p></blockquote>`;
+	if (style.match(/^h[1-6]$/)) return `<${style}>${children}</${style}>`;
+	return `<p>${children}</p>`;
+}
+
 export function preprocessBlocks(ptBlocks: any[]): { blocks: any[]; headings: TocHeading[] } {
 	const headings: TocHeading[] = [];
 
@@ -51,9 +76,9 @@ export function preprocessBlocks(ptBlocks: any[]): { blocks: any[]; headings: To
 		if (b.style?.startsWith("h")) {
 			const level = parseInt(b.style.slice(1), 10);
 			const id = text.toLowerCase().replace(/[^\w]+/g, "-").replace(/(^-|-$)/g, "");
-			const escapedText = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 			headings.push({ depth: level, slug: id, text });
-			ptBlocks[i] = { _type: "docs.html", _key: `heading-${i}`, html: `<h${level} id="${id}">${escapedText}</h${level}>` };
+			const html = `<h${level} id="${id}">${(b.children || []).map((c: any) => renderSpan(c, b.markDefs)).join("")}</h${level}>`;
+			ptBlocks[i] = { _type: "docs.html", _key: `heading-${i}`, html };
 			continue;
 		}
 
@@ -81,13 +106,17 @@ export function preprocessBlocks(ptBlocks: any[]): { blocks: any[]; headings: To
 				html += '</tbody></table>';
 				const newBlocks: any[] = [];
 				if (preText) {
-					newBlocks.push({ _type: "block", style: "normal", children: [{ _type: "span", text: preText }] });
+					newBlocks.push({ _type: "docs.html", _key: `pre-${i}`, html: `<p>${preText}</p>` });
 				}
 				newBlocks.push({ _type: "docs.html", _key: `table-${i}`, html });
 				ptBlocks.splice(i, 1, ...newBlocks);
 				i += newBlocks.length - 1;
+				continue;
 			}
 		}
+
+		// All remaining standard blocks → docs.html so they get the block editing UI
+		ptBlocks[i] = { _type: "docs.html", _key: `block-${i}`, html: blockToHtml(b) };
 	}
 
 	return { blocks: ptBlocks, headings };

@@ -13,13 +13,15 @@ const hide = pathname.startsWith("/_emdash/");
 
 {!hide && (
 	<div class="header-actions">
-		<button id="copy-page-btn" type="button" class="ha-btn ha-btn-primary" data-slug={slug} aria-label="Copy page as Markdown">
-			Copy Page MD
-		</button>
-		<a href={isMarkdownEditor ? pathname : `${pathname}?editor=markdown`} class="ha-btn ha-btn-secondary">
+		<span class="ha-copy-wrap">
+			<button id="copy-page-btn" type="button" class="sl-link-button primary" data-slug={slug} aria-label="Copy page as Markdown">
+				Copy Page MD
+			</button>
+			<span id="copy-toast" class="ha-toast" role="status" aria-live="polite" hidden />
+		</span>
+		<a href={isMarkdownEditor ? pathname : `${pathname}?editor=markdown`} class="sl-link-button secondary">
 			{isMarkdownEditor ? "Edit Visually" : "Edit as MD"}
 		</a>
-		<span id="copy-toast" class="ha-toast" role="status" aria-live="polite" hidden />
 	</div>
 )}
 
@@ -28,34 +30,39 @@ const hide = pathname.startsWith("/_emdash/");
 		display: flex;
 		align-items: center;
 		gap: 0.5rem;
+	}
+	.ha-copy-wrap {
 		position: relative;
 	}
-	.ha-btn {
+	.sl-link-button {
+		align-items: center;
+		border: 1px solid transparent;
+		border-radius: 999rem;
+		display: inline-flex;
 		font: inherit;
-		padding: 0.35rem 0.75rem;
-		border-radius: 0.375rem;
-		border: 1px solid var(--sl-color-hairline, #2b2f38);
-		cursor: pointer;
+		font-size: var(--sl-text-sm);
+		gap: 0.5em;
+		line-height: 1.1875;
+		outline-offset: 0.25rem;
+		padding: 0.4375rem 1.125rem;
 		text-decoration: none;
-		font-size: var(--sl-text-sm, 0.875rem);
-		line-height: 1.25;
+		cursor: pointer;
 	}
-	.ha-btn-primary {
-		background: var(--sl-color-text-accent, #8ab4f8);
-		color: var(--sl-color-black, #000);
-		border-color: transparent;
+	.sl-link-button.primary {
+		background: var(--sl-color-text-accent);
+		border-color: var(--sl-color-text-accent);
+		color: var(--sl-color-black);
 	}
-	.ha-btn-secondary {
-		background: transparent;
-		color: var(--sl-color-white, #fff);
-	}
-	.ha-btn-secondary:hover {
-		background: rgba(255, 255, 255, 0.05);
+	.sl-link-button.secondary {
+		border-color: inherit;
+		color: var(--sl-color-white);
 	}
 	.ha-toast {
 		position: absolute;
 		top: calc(100% + 0.25rem);
-		right: 0;
+		left: 50%;
+		transform: translateX(-50%);
+		white-space: nowrap;
 		padding: 0.25rem 0.625rem;
 		border-radius: 0.25rem;
 		background: var(--sl-color-bg-nav, #17191e);

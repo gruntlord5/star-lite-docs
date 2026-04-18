@@ -92,32 +92,21 @@ if (notFound && slug === "index") {
 	try { ptBlocks = JSON.parse(String(row!.content || "[]")); } catch {}
 }
 
-// Markdown editor mode — `?editor=markdown`, gated on authentication.
+// Markdown editor mode — `?editor=markdown`, gated on authentication + edit mode.
 // Unauthenticated hits just render the normal view as if the param weren't set.
 const user = (Astro.locals as any).user;
+const isEditing = Astro.cookies.get("emdash-edit-mode")?.value === "true";
 const isMarkdownEditor =
 	!!user &&
 	!notFound &&
+	isEditing &&
 	Astro.url.searchParams.get("editor") === "markdown";
 
 const markdownSource = isMarkdownEditor ? portableTextToMarkdown(ptBlocks) : "";
 
-const isEditing = Astro.cookies.get("emdash-edit-mode")?.value === "true";
-
-// Tag PT with edit metadata when in edit mode
-if (isEditing && !notFound && ptBlocks.length) {
-	const EMDASH_EDIT = Symbol.for("__emdash");
-	Object.defineProperty(ptBlocks, EMDASH_EDIT, {
-		value: { collection: "pages", id: String(row!.id), field: "content" },
-		enumerable: false,
-		configurable: true,
-	});
-}
-
-// Images always render — editing the markdown src in TipTap isn't useful.
-// Headings/tables only pre-process when not editing, so TipTap keeps them editable.
-if (isEditing) preprocessImages(ptBlocks);
-const headings = isEditing ? [] : preprocessBlocks(ptBlocks).headings;
+// Always preprocess — star-lite doesn't use emdash's inline TipTap editor,
+// so we never attach __emdash edit metadata to ptBlocks.
+const headings = preprocessBlocks(ptBlocks).headings;
 const toc = headings.filter(h => h.depth >= 2 && h.depth <= 3);
 
 // Splash mode — when the first block is a docs.hero, hide sidebar/TOC and widen content.
@@ -128,14 +117,17 @@ const isSplash = ptBlocks.some((b: any) => b?._type === "docs.hero");
 ---
 
 <DocsLayout title={title} toc={toc} slug={slug} sidebar={sidebar} siteTitle={siteTitle} splash={isSplash}>
+	{isEditing && !notFound && (
+		<meta data-emdash-ref={JSON.stringify({ collection: "pages", id: String(row!.id), field: "content", status: row!.status })} />
+	)}
 	<div class="sl-markdown-content">
 		{isMarkdownEditor ? (
 			<div class="sl-md-editor" data-page-id={String(row!.id)}>
 				<div class="sl-md-toolbar">
 					<strong>Editing as Markdown</strong>
 					<span class="sl-md-status" id="sl-md-status" />
-					<a class="sl-md-cancel" href={Astro.url.pathname}>Cancel</a>
-					<button type="button" id="sl-md-save" class="sl-md-save">Save</button>
+					<a class="sl-link-button secondary" href={Astro.url.pathname}>Cancel</a>
+					<button type="button" id="sl-md-save" class="sl-link-button primary">Save</button>
 				</div>
 				<textarea id="sl-md-textarea" spellcheck="false">{markdownSource}</textarea>
 				<p class="sl-md-hint">
@@ -153,6 +145,250 @@ const isSplash = ptBlocks.some((b: any) => b?._type === "docs.hero");
 		)}
 	</div>
 </DocsLayout>
+
+{isEditing && !isMarkdownEditor && !notFound && (
+	<>
+		<style is:global>
+			.sl-markdown-content .emdash-block-wrap {
+				position: relative;
+			}
+			.sl-markdown-content .emdash-block-wrap:hover {
+				outline: 1px dashed rgba(59, 130, 246, 0.3);
+				border-radius: 4px;
+			}
+			.sl-markdown-content .emdash-block-wrap:hover .emdash-block-edit {
+				display: block !important;
+			}
+			.emdash-block-edit {
+				display: none !important;
+				position: absolute;
+				top: 4px;
+				right: 4px;
+				padding: 3px 12px;
+				font-size: 12px;
+				font-weight: 600;
+				background: var(--sl-color-text-accent, #3b82f6);
+				color: var(--sl-color-black, #fff);
+				border: none;
+				border-radius: 4px;
+				cursor: pointer;
+				z-index: 10;
+			}
+			.emdash-block-edit-form {
+				position: absolute;
+				top: 0;
+				left: 0;
+				right: 0;
+				z-index: 20;
+				background: white;
+				border: 1px solid #e2e8f0;
+				border-radius: 8px;
+				padding: 12px;
+				box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+			}
+			[data-sl-edit][contenteditable] {
+				outline: none;
+			}
+			[data-sl-edit][contenteditable]:focus-visible {
+				outline: 2px solid var(--sl-color-text-accent, #3b82f6);
+				outline-offset: 0.25rem;
+				border-radius: 2px;
+			}
+			[data-theme="dark"] .emdash-block-edit-form,
+			.dark .emdash-block-edit-form {
+				background: #1e293b;
+				border-color: #334155;
+			}
+		</style>
+		<script define:vars={{ blockEditPageId: String(row!.id) }}>
+			document.querySelectorAll('.sl-markdown-content .emdash-block-wrap[data-block-props]').forEach(function(wrap) {
+				if (wrap.querySelector('.emdash-block-edit')) return;
+				var btn = document.createElement('button');
+				btn.className = 'emdash-block-edit';
+				btn.textContent = 'Edit';
+				btn.type = 'button';
+				wrap.appendChild(btn);
+
+				// Make [data-sl-edit] elements contenteditable and sync to block props
+				// Check the wrap itself and its descendants
+				var editEls = Array.from(wrap.querySelectorAll('[data-sl-edit]'));
+				if (wrap.hasAttribute('data-sl-edit')) editEls.unshift(wrap);
+				editEls.forEach(function(el) {
+					var field = el.getAttribute('data-sl-edit');
+					var isHtml = field === 'html';
+					el.setAttribute('contenteditable', isHtml ? 'true' : 'plaintext-only');
+					el.addEventListener('input', function() {
+						var props = {};
+						try { props = JSON.parse(wrap.dataset.blockProps || '{}'); } catch(e) {}
+						if (isHtml) {
+							// Clone and strip injected UI elements before reading innerHTML
+							var clone = el.cloneNode(true);
+							clone.querySelectorAll('.emdash-block-edit, .emdash-block-edit-form').forEach(function(n) { n.remove(); });
+							props[field] = clone.innerHTML;
+						} else {
+							props[field] = el.textContent || '';
+						}
+						wrap.dataset.blockProps = JSON.stringify(props);
+						document.dispatchEvent(new CustomEvent('emdash:save', { detail: { state: 'unsaved' } }));
+					});
+				});
+			});
+
+			function openBlockEditForm(btn) {
+				var wrap = btn.closest('.emdash-block-wrap');
+				if (!wrap) return;
+				var existing = wrap.querySelector('.emdash-block-edit-form');
+				if (existing) { existing.remove(); return; }
+
+				var props = JSON.parse(wrap.dataset.blockProps || '{}');
+				var blockType = wrap.dataset.blockType || '';
+				var skipKeys = { _type: 1, _key: 1 };
+				var form = document.createElement('div');
+				form.className = 'emdash-block-edit-form';
+
+				var heading = document.createElement('div');
+				heading.style.cssText = 'font-weight:600;font-size:13px;margin-bottom:8px;';
+				heading.textContent = 'Edit ' + blockType.replace(/^[^.]+\./, '');
+				form.appendChild(heading);
+
+				var inputs = {};
+				for (var key in props) {
+					if (skipKeys[key]) continue;
+					var val = props[key];
+					var field = document.createElement('div');
+					field.style.cssText = 'margin-bottom:6px;';
+					var lbl = document.createElement('label');
+					lbl.style.cssText = 'display:block;font-size:11px;font-weight:600;margin-bottom:2px;color:#64748b;';
+					lbl.textContent = key;
+					field.appendChild(lbl);
+
+					var strVal = typeof val === 'string' ? val : JSON.stringify(val);
+					var input;
+					if (strVal.length > 80) {
+						input = document.createElement('textarea');
+						input.rows = 2;
+					} else {
+						input = document.createElement('input');
+						input.type = typeof val === 'boolean' ? 'checkbox' : typeof val === 'number' ? 'number' : 'text';
+						if (typeof val === 'boolean') input.checked = !!val;
+					}
+					input.value = strVal;
+					input.style.cssText = 'width:100%;padding:4px 8px;font-size:12px;border:1px solid #cbd5e1;border-radius:4px;background:transparent;font-family:inherit;';
+					field.appendChild(input);
+					form.appendChild(field);
+					inputs[key] = input;
+				}
+
+				var actions = document.createElement('div');
+				actions.style.cssText = 'display:flex;gap:8px;margin-top:8px;';
+				var saveBtn = document.createElement('button');
+				saveBtn.textContent = 'Save';
+				saveBtn.style.cssText = 'padding:4px 16px;font-size:12px;background:#3b82f6;color:white;border:none;border-radius:4px;cursor:pointer;';
+				var cancelBtn = document.createElement('button');
+				cancelBtn.textContent = 'Cancel';
+				cancelBtn.style.cssText = 'padding:4px 16px;font-size:12px;background:transparent;border:1px solid #cbd5e1;border-radius:4px;cursor:pointer;';
+				actions.appendChild(saveBtn);
+				actions.appendChild(cancelBtn);
+				form.appendChild(actions);
+				wrap.appendChild(form);
+
+				cancelBtn.addEventListener('mousedown', function(ev) { ev.stopPropagation(); ev.preventDefault(); form.remove(); });
+				saveBtn.addEventListener('mousedown', function(ev) {
+					ev.stopPropagation(); ev.preventDefault();
+					var newProps = Object.assign({}, props);
+					for (var k in inputs) {
+						var inp = inputs[k];
+						var orig = props[k];
+						if (inp.type === 'checkbox') newProps[k] = inp.checked;
+						else if (typeof orig === 'number') newProps[k] = Number(inp.value) || 0;
+						else newProps[k] = inp.value;
+					}
+					wrap.dataset.blockProps = JSON.stringify(newProps);
+					form.remove();
+					document.dispatchEvent(new CustomEvent("emdash:save", { detail: { state: "unsaved" } }));
+				});
+			}
+
+			document.addEventListener('click', function(e) {
+				if (e.target.closest('.emdash-block-edit-form')) return;
+				var btn = e.target.closest('.emdash-block-edit');
+				if (!btn) return;
+				e.preventDefault();
+				e.stopPropagation();
+				openBlockEditForm(btn);
+			}, true);
+
+			// Toolbar is injected before </body> by emdash middleware, so it
+			// doesn't exist yet when this script runs. Defer until DOMContentLoaded.
+			window.addEventListener('DOMContentLoaded', function() {
+				var statusEl = document.getElementById('emdash-tb-save-status');
+				if (!statusEl) return;
+				var needsSave = false;
+
+				function ensureSaveButton() {
+					needsSave = true;
+					if (statusEl.querySelector('#sl-toolbar-save')) return;
+					statusEl.innerHTML = '';
+					var btn = document.createElement('button');
+					btn.id = 'sl-toolbar-save';
+					btn.textContent = 'Save';
+					btn.className = 'emdash-tb-badge emdash-tb-badge--unsaved';
+					btn.style.cssText = 'cursor:pointer;border:none;font:inherit;';
+					btn.addEventListener('click', doSave);
+					statusEl.appendChild(btn);
+				}
+
+				// Toolbar overwrites innerHTML on emdash:save — watch and replace
+				new MutationObserver(function() {
+					if (needsSave && !statusEl.querySelector('#sl-toolbar-save')) {
+						ensureSaveButton();
+					}
+				}).observe(statusEl, { childList: true, subtree: true });
+
+				function doSave() {
+					needsSave = false;
+					statusEl.innerHTML = '<span class="emdash-tb-badge emdash-tb-badge--saving">Saving\u2026</span>';
+
+					var allBlocks = [];
+					document.querySelectorAll('.sl-markdown-content .emdash-block-wrap[data-block-props]').forEach(function(w) {
+						try {
+							var p = JSON.parse(w.dataset.blockProps);
+							p._type = w.dataset.blockType;
+							allBlocks.push(p);
+						} catch(e) {}
+					});
+
+					fetch('/api/drop-fts', { method: 'POST', credentials: 'same-origin' }).then(function() {
+						return fetch('/_emdash/api/content/pages/' + encodeURIComponent(blockEditPageId), {
+							method: 'PUT',
+							credentials: 'same-origin',
+							headers: { 'Content-Type': 'application/json', 'X-EmDash-Request': '1' },
+							body: JSON.stringify({ data: { content: allBlocks } }),
+						});
+					}).then(function(r) {
+						if (!r.ok) throw new Error('PUT failed: ' + r.status);
+						return fetch('/_emdash/api/content/pages/' + encodeURIComponent(blockEditPageId) + '/publish', {
+							method: 'POST', credentials: 'same-origin',
+							headers: { 'X-EmDash-Request': '1' },
+						});
+					}).then(function() {
+						statusEl.innerHTML = '<span class="emdash-tb-badge emdash-tb-badge--saved">Saved</span>';
+						setTimeout(function() { location.reload(); }, 500);
+					}).catch(function(e) {
+						console.error('Save failed:', e);
+						statusEl.innerHTML = '<span class="emdash-tb-badge emdash-tb-badge--error">Save failed</span>';
+					});
+				}
+
+				document.addEventListener('emdash:save', function(e) {
+					if ((e.detail || {}).state === 'unsaved') ensureSaveButton();
+				});
+				var content = document.querySelector('.sl-markdown-content');
+				if (content) content.addEventListener('input', ensureSaveButton);
+			});
+		</script>
+	</>
+)}
 
 {isMarkdownEditor && (
 	<>
@@ -177,26 +413,30 @@ const isSplash = ptBlocks.some((b: any) => b?._type === "docs.hero");
 			}
 			.sl-md-status[data-state="error"] { color: #f87171; }
 			.sl-md-status[data-state="saved"] { color: #4ade80; }
-			.sl-md-cancel,
-			.sl-md-save {
+			.sl-link-button {
+				align-items: center;
+				border: 1px solid transparent;
+				border-radius: 999rem;
+				display: inline-flex;
 				font: inherit;
-				padding: 0.35rem 0.875rem;
-				border-radius: 0.375rem;
-				border: 1px solid var(--sl-color-hairline, #2b2f38);
-				cursor: pointer;
+				font-size: var(--sl-text-sm);
+				gap: 0.5em;
+				line-height: 1.1875;
+				outline-offset: 0.25rem;
+				padding: 0.4375rem 1.125rem;
 				text-decoration: none;
+				cursor: pointer;
 			}
-			.sl-md-cancel {
-				background: transparent;
-				color: var(--sl-color-white, #fff);
+			.sl-link-button.primary {
+				background: var(--sl-color-text-accent);
+				border-color: var(--sl-color-text-accent);
+				color: var(--sl-color-black);
 			}
-			.sl-md-cancel:hover { background: rgba(255, 255, 255, 0.05); }
-			.sl-md-save {
-				background: var(--sl-color-text-accent, #8ab4f8);
-				color: var(--sl-color-black, #000);
-				border-color: transparent;
+			.sl-link-button.secondary {
+				border-color: inherit;
+				color: var(--sl-color-white);
 			}
-			.sl-md-save:disabled { opacity: 0.6; cursor: progress; }
+			.sl-link-button:disabled { opacity: 0.6; cursor: progress; }
 			#sl-md-textarea {
 				flex: 1 1 auto;
 				min-height: 60vh;
@@ -238,6 +478,7 @@ const isSplash = ptBlocks.some((b: any) => b?._type === "docs.hero");
 				setStatus("Saving…", "saving");
 				try {
 					const blocks = markdownToPortableText(textarea.value);
+					await fetch("/api/drop-fts", { method: "POST", credentials: "same-origin" });
 					const res = await fetch(`/_emdash/api/content/pages/${encodeURIComponent(pageId)}`, {
 						method: "PUT",
 						credentials: "same-origin",
@@ -254,13 +495,18 @@ const isSplash = ptBlocks.some((b: any) => b?._type === "docs.hero");
 						const msg = body?.error?.message || body?.error?.code || `HTTP ${res.status}`;
 						throw new Error(msg);
 					}
+					// Publish the draft so the change is visible on the public page.
+					await fetch(`/_emdash/api/content/pages/${encodeURIComponent(pageId)}/publish`, {
+						method: "POST",
+						credentials: "same-origin",
+						headers: { "X-EmDash-Request": "1" },
+					});
 					setStatus("Saved", "saved");
-					// Pop back into normal view so the user sees the rendered result.
 					setTimeout(() => {
 						const url = new URL(window.location.href);
 						url.searchParams.delete("editor");
 						window.location.href = url.toString();
-					}, 500);
+					}, 400);
 				} catch (err) {
 					console.error("Save failed:", err);
 					setStatus(`Save failed: ${err instanceof Error ? err.message : String(err)}`, "error");

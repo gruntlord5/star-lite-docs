@@ -32,9 +32,9 @@ const cardStyle = color && colorVariables[color]
 <article class="emdash-block-wrap card sl-flex" style={cardStyle} data-block-type="star-lite.card" data-block-props={JSON.stringify(node)}>
   <p class="title sl-flex">
     {icon && <Icon name={icon as keyof typeof Icons} class="icon" size="1.333em" />}
-    {title && <span set:html={title} />}
+    {title && <span data-sl-edit="title" set:html={title} />}
   </p>
-  {content && <div class="body" set:html={blockMarkdownToHtml(content)} />}
+  {content && <div class="body" data-sl-edit="content" set:html={blockMarkdownToHtml(content)} />}
   <slot />
 </article>
 

@@ -1,136 +1,159 @@
 # Star-Lite Docs
 
-A drop-in documentation theme for [EmDash CMS](https://github.com/emdash-cms) + Astro — the Starlight look and feel, but content lives in the CMS instead of MDX files on disk.
+A drop-in documentation theme that brings the power of [Starlight](https://github.com/withastro/starlight) documentation to [EmDash CMS](https://github.com/emdash-cms/emdash) to allow for a fully featured frontend editing expereince for documentation instead of using static MDX files on disk.
 
 ## Features
 
-- **Starlight-style layout** — collapsible sidebar, right-rail TOC, search modal, dark/light/auto theme toggle, mobile menu.
-- **Drop-in emdash plugin** — one `starLiteDocs()` integration + one `starLiteBlocks()` registration. No sidebar config or schema setup required.
-- **Lazy self-seeding** — first request auto-applies the `pages` collection and a `docs-sidebar` menu so a fresh emdash install works out of the box.
-- **Menu-driven sidebar** — operators edit the sidebar from the emdash admin's Menus page, no rebuild.
-- **Rich portable-text blocks** — Tabs, Cards, LinkCards, Asides, Steps, Badges, File Trees, Icons, LinkButtons, Hero, Image, plus raw HTML and Expressive Code blocks.
-- **Per-block edit button** — hover a block in edit mode to open the field editor; inline-editable text on hero/tagline/action buttons.
-- **Expressive Code** — Night Owl dark/light themes bundled.
+**Layout & theming**
+
+- Starlight-style layout and theme with collapsible sidebar, and table of contents
+- Ctrl+K search bar and modal using `/api/search`
+- Dark / light / auto theme toggle
+- Expressive Code syntax highlighting with bundled Night Owl themes
+
+**Content management**
+
+- Drop-in emdash plugin — one integration, no schema or plugin setup
+- Zero-config self-seeding — first request creates the `pages` collection, `docs-sidebar` menu, and a welcome page with Houston
+- Menu-driven sidebar — edit navigation from the emdash admin, no need to rebuild for any changes you make while retaining full control over the menu
+- 14 rich Portable Text block types from Starlight: hero, tabs, cards, asides, steps, badges, file trees, icons, link buttons, code, images, and raw HTML
+
+**Editing**
+
+- **Visual inline editing** — toggle Edit in the emdash toolbar, click any text to edit in place, then hit Save in the toolbar. Thats it, your changes are live and ready to view.
+- **Block edit forms** — hover any block in edit mode to reveal an Edit button and open an inline property editor for all the block fields, no need to take a trip to the admin page.
+- **Markdown editor** — click "Edit as MD" in the header to switch to a full-page markdown textarea with a save button. All content and blocks work with markdown so you can edit existing content and blocks as well as add new ones using the same markdown workflow you are used to in Starlight. Click save and see the markdown rendered immediantly on the page.
+- **Copy Page MD** — one-click clipboard copy of any page as markdown using the header button
 
 ## Quickstart
 
-The fastest path is the bundled starter — a complete Astro + emdash + Star-Lite project, pre-wired and ready to run:
+Install [Bun](https://bun.sh) if you don't have it, it's used to scaffold the starter template and is also a great package manager that makes the entire process significantly faster.
 
 ```bash
-bunx giget github:gruntlord5/star-lite-docs/starter my-docs
-cd my-docs
-bun install
-bun run dev
+curl -fsSL https://bun.sh/install | bash
 ```
 
-Open http://localhost:4321/_emdash/admin to set up your admin user, then visit `/` to see the themed splash.
-
-The rest of this README covers adding Star-Lite to an **existing** emdash site.
-
-## Install into an existing site
-
-### 1. Add the integration
+Then create your project:
 
 ```bash
-npx astro add star-lite-docs
+bun create star-lite-docs
 ```
 
-(Until the package is published to npm, install from the GitHub repo: `bun add github:gruntlord5/star-lite-docs` and edit `astro.config.mjs` manually.)
+Open `http://localhost:4321/_emdash/admin` to create your admin user, then visit `/` to see the themed welcome page.
 
-This wires `starLiteDocs()` into your `astro.config.mjs` automatically. (Expressive Code is bundled and auto-registered — no separate install. `astro`, `emdash`, and an `@astrojs/*` adapter are peer-deps you already have in an emdash site.)
+> Bun is only required for the quickstart scaffolding step above. If you're adding Star-Lite to an existing site, you can use npm or any other package manager — see [Add to an existing emdash site](#add-to-an-existing-emdash-site).
 
-### 2. Register block components with emdash
-
-`astro add` only edits the top-level `integrations` array. Star-Lite's block components are an emdash plugin, so you need one manual edit — add `starLiteBlocks()` to your emdash plugins list:
-
-```js
-// astro.config.mjs
-import { starLiteDocs, starLiteBlocks } from "star-lite-docs";
-
-// ...
-emdash({
-  database: sqlite({ url: "file:./data.db" }),
-  storage: local({ directory: "./uploads" }),
-  plugins: [starLiteBlocks()],   // ← add this line
-}),
-```
-
-Without this step, the docs theme still renders correctly, but the emdash admin's block picker won't show Tabs, Cards, Hero, etc. when authoring pages.
-
-### 3. Hand routes to the catch-all
-
-Star-Lite injects a `/[...slug]` catch-all route. Astro's router prefers explicit page files, so if your project has `src/pages/index.astro`, `src/pages/[slug].astro`, or similar, those win. Delete the ones you want Star-Lite to own:
+## Add to an existing emdash site
 
 ```bash
-# if you started from the emdash "starter" template:
-rm -f src/pages/index.astro src/pages/\[slug\].astro
-rm -rf src/pages/posts src/pages/tag src/pages/category
+bunx astro add star-lite-docs
 ```
 
-### 4. Run it
+This installs the package and wires `starLiteDocs()` into your `astro.config.mjs`. Block components, the Houston welcome page image, and route conflict warnings are all handled automatically at build time.
 
-```bash
-npm run dev        # or: bun run dev
-```
+## Visual editing
 
-Visit `/` — you'll see a themed splash with a link to the admin. Run through the emdash setup wizard, publish a page with slug `index`, and the splash is replaced by your content. The `docs-sidebar` menu lets you edit the left-nav from the admin with no rebuild.
+Star-Lite adds three editing modes on top of emdash, all implemented as a plugin with no emdash patches.
 
-### Configuration
+### Inline editing
+
+1. Toggle **Edit** in the emdash toolbar (bottom of the page)
+2. Click any text — headings, paragraphs, hero taglines, card titles, badge text, etc.
+3. Edit directly in the page
+4. A **Save** button appears in the toolbar — click to persist and reload
+
+Inline editing works on any element with a `data-sl-edit` attribute. Star-Lite tags all its block components with this attribute, and standard Portable Text blocks are preprocessed into `docs.html` blocks that support it too.
+
+### Block edit form
+
+With Edit mode on, hover any block to see a dashed blue outline and an **Edit** button in the top-right corner. Clicking it opens an inline form showing all the block's properties (tagline, image src, action URLs, etc.). Save persists the changes and reloads.
+
+### Markdown editor
+
+Click **Edit as MD** in the header (visible when Edit mode is on). This switches to a full-page markdown textarea. Custom blocks appear as `<!--ec:block …-->` fences and round-trip safely. Click Save to persist, or Cancel to return to the rendered view.
+
+## Configuration
 
 ```ts
 starLiteDocs({
-  /** Site title shown in the header and <title>. */
+  // Site title — shown in the header and <title>.
+  // Overridden at runtime by emdash's Settings > Site > Title if set.
   title: "My Docs",
 
-  /**
-   * Optional static sidebar. Omit to pull from the `docs-sidebar` menu
-   * at request time (editable in the emdash admin UI).
-   */
+  // Static sidebar config. Omit to use the `docs-sidebar` emdash menu
+  // (editable from the admin UI, no rebuild needed).
   sidebar: [
     {
       label: "Guide",
       items: [
-        { label: "Getting Started", link: "/guide/getting-started" },
-        { label: "Installation", link: "/guide/install" },
+        { label: "Getting Started", link: "/getting-started" },
+        { label: "Installation", link: "/install" },
       ],
     },
   ],
+
+  // Expressive Code options, or `false` to disable it entirely.
+  expressiveCode: { /* AstroExpressiveCodeOptions */ },
 });
 ```
 
 ## Block types
 
-| Block                | Description                                    |
-| -------------------- | ---------------------------------------------- |
-| `docs.hero`          | Splash homepage hero (title, tagline, actions) |
-| `docs.image`         | Standalone image (editable src/alt)            |
-| `docs.html`          | Raw HTML passthrough                           |
-| `star-lite.tabs`       | Tabbed content                                 |
-| `star-lite.card`       | Content card with optional icon/color          |
-| `star-lite.cardGrid`   | Grid of link cards                             |
-| `star-lite.linkCard`   | Single navigation card                         |
-| `star-lite.aside`      | note / tip / caution / danger callout          |
-| `star-lite.badge`      | Inline status badge                            |
-| `star-lite.fileTree`   | File and directory tree                        |
-| `star-lite.icon`       | Inline icon                                    |
-| `star-lite.linkButton` | Styled link as a button                        |
-| `star-lite.steps`      | Numbered step-by-step instructions             |
-| `code`               | Expressive Code block                          |
+| Block | Description |
+| --- | --- |
+| `docs.hero` | Splash hero with title, tagline, image, and action buttons |
+| `docs.image` | Standalone image with editable src and alt |
+| `docs.html` | Raw HTML passthrough (also used for preprocessed text blocks) |
+| `code` | Expressive Code syntax-highlighted block |
+| `star-lite.tabs` | Tabbed content panels |
+| `star-lite.card` | Content card with optional icon and color |
+| `star-lite.cardGrid` | Grid layout for cards |
+| `star-lite.linkCard` | Navigation card with title, description, and link |
+| `star-lite.aside` | Callout box — note, tip, caution, or danger |
+| `star-lite.badge` | Inline status badge |
+| `star-lite.fileTree` | File and directory tree |
+| `star-lite.icon` | Inline icon from the Starlight icon set |
+| `star-lite.linkButton` | Styled link rendered as a pill button |
+| `star-lite.steps` | Numbered step-by-step instructions |
 
-## Header actions
+## API
 
-The themed header includes two buttons that operate on the current page:
+```ts
+import {
+  starLiteDocs,        // Astro integration (blocks auto-registered at build)
+  starLiteBlocks,      // emdash plugin descriptor (only needed for advanced setups)
+  preprocessBlocks,    // PT normalizer (headings, tables, images, text → docs.html)
+  preprocessImages,    // image-only subset
+  loadSidebarFromMenu, // resolve emdash menu → SidebarConfig[]
+  ensurePagesCollection, // idempotent seed bootstrap
+  defaultSeed,         // the SeedFile shipped by the plugin
+  buildSidebar,        // build sidebar tree from flat config
+  markCurrent,         // mark the active sidebar item by slug
+} from "star-lite-docs";
 
-- **Copy Page MD** — fetches `/api/get-markdown?slug=…` and copies the page's content as markdown to your clipboard. Custom blocks (hero, cards, tabs, …) round-trip as `<!--ec:block …-->` opaque fences. Works for anyone — no auth required.
-- **Edit as MD** — toggles `?editor=markdown` on the URL. When set **and** you're authenticated, the catch-all renders a textarea editor instead of the rendered page. Save runs `markdownToPortableText` client-side and PUTs to `/_emdash/api/content/pages/:id` (emdash's own admin API handles auth/CSRF). Toggling back to **Edit Visually** drops the param and returns to the rendered view.
+import type {
+  StarLiteDocsOptions,
+  StarLiteDocsConfig,
+  SidebarConfig,
+  SidebarEntry,
+  SidebarLink,
+  SidebarGroup,
+} from "star-lite-docs";
+```
+
+Astro components are available at subpath imports:
+
+```ts
+import DocsLayout from "star-lite-docs/layout";
+```
 
 ## How it works
 
-- Content is stored as Portable Text in the `ec_pages` table — the DB is the source of truth.
-- `/[...slug]` catch-all route looks up a published page by slug, runs a preprocessor (markdown images → docs.image blocks, headings → TOC anchors, tables → HTML), and renders via emdash's `PortableText`.
-- `/api/search` returns matching pages by title/content (public, unauthenticated).
-- Sidebar source: static config from `starLiteDocs()` if provided, otherwise the `docs-sidebar` emdash menu.
-- Seed bootstrap is lazy (runs on first request, cached per process) so first-boot schema setup is zero-config.
+- Content is stored as Portable Text in the `ec_pages` table — the database is the source of truth.
+- The `/[...slug]` catch-all route looks up a published page by slug, preprocesses blocks (images, headings with TOC anchors, tables, and standard text blocks are all converted to `docs.html`), and renders via emdash's `PortableText` with Star-Lite's block components.
+- On first boot, the middleware runs `applySeed` to create the `pages` collection, `docs-sidebar` menu, and a welcome page. This is idempotent — existing data is never overwritten.
+- The toolbar Save button is injected client-side via a `DOMContentLoaded` handler that watches the emdash toolbar's status area with a `MutationObserver`.
+- A hidden `<meta data-emdash-ref>` element provides the toolbar with entry context (collection, id, status) without triggering click-to-admin redirects.
 
 ## License
 

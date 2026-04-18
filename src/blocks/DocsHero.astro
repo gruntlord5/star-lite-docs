@@ -70,6 +70,7 @@ const displayTitle = title && title.trim() ? title : pageTitle;
 					if (!el.dataset.heroBound) {
 						el.addEventListener("input", () => {
 							syncProps({ [field]: el.textContent ?? "" });
+							document.dispatchEvent(new CustomEvent("emdash:save", { detail: { state: "unsaved" } }));
 						});
 						el.dataset.heroBound = "1";
 					}
@@ -95,6 +96,7 @@ const displayTitle = title && title.trim() ? title : pageTitle;
 					if (actions[idx] && textEl) actions[idx].text = textEl.textContent ?? "";
 				});
 				syncProps({ actionsJson: JSON.stringify(actions) });
+				document.dispatchEvent(new CustomEvent("emdash:save", { detail: { state: "unsaved" } }));
 			};
 			actionEls.forEach(a => {
 				const textEl = a.querySelector<HTMLElement>('[data-hero-action-field="text"]');

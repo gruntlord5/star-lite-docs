@@ -22,11 +22,13 @@
  *   });
  */
 
+import { existsSync, copyFileSync, mkdirSync } from "node:fs";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import type { AstroIntegration } from "astro";
 import expressiveCode from "astro-expressive-code";
 import type { AstroExpressiveCodeOptions } from "astro-expressive-code";
 import type { SidebarConfig } from "./types";
-
 export interface StarLiteDocsOptions {
 	/**
 	 * Fallback site title used until the operator sets one in
@@ -61,7 +63,7 @@ export function starLiteDocs(options: StarLiteDocsOptions = {}): AstroIntegratio
 	return {
 		name: "star-lite-docs",
 		hooks: {
-			"astro:config:setup"({ injectRoute, addMiddleware, updateConfig, config }) {
+			"astro:config:setup"({ injectRoute, addMiddleware, updateConfig, config, logger }) {
 				// Auto-register Expressive Code unless the user already added
 				// it themselves OR explicitly opted out via `expressiveCode: false`.
 				// We splice it in directly after this integration so order matches
@@ -80,6 +82,28 @@ export function starLiteDocs(options: StarLiteDocsOptions = {}): AstroIntegratio
 					}
 				}
 
+				// Copy houston.webp to public/ if missing
+				const root = fileURLToPath(config.root);
+				const publicDir = join(root, "public");
+				const houstonDest = join(publicDir, "houston.webp");
+				if (!existsSync(houstonDest)) {
+					const houstonSrc = new URL("./assets/houston.webp", import.meta.url);
+					mkdirSync(publicDir, { recursive: true });
+					copyFileSync(fileURLToPath(houstonSrc), houstonDest);
+					logger.info("copied houston.webp to public/");
+				}
+
+				// Warn about route conflicts
+				const srcPages = join(root, "src", "pages");
+				const conflicts = ["index.astro", "[slug].astro", "[...slug].astro"]
+					.filter(f => existsSync(join(srcPages, f)));
+				if (conflicts.length) {
+					logger.warn(
+						`Found route files that will override Star-Lite's catch-all: ${conflicts.join(", ")}. ` +
+						`Delete them if you want Star-Lite to handle these routes.`
+					);
+				}
+
 				// Inject catch-all page route
 				injectRoute({
 					pattern: "/[...slug]",
@@ -91,6 +115,13 @@ export function starLiteDocs(options: StarLiteDocsOptions = {}): AstroIntegratio
 				injectRoute({
 					pattern: "/api/search",
 					entrypoint: new URL("./routes/search.ts", import.meta.url).pathname,
+					prerender: false,
+				});
+
+				// Inject FTS disable route (called before save to prevent corruption)
+				injectRoute({
+					pattern: "/api/drop-fts",
+					entrypoint: new URL("./routes/drop-fts.ts", import.meta.url).pathname,
 					prerender: false,
 				});
 
@@ -129,6 +160,11 @@ export function starLiteDocs(options: StarLiteDocsOptions = {}): AstroIntegratio
 									if (id === RESOLVED_VIRTUAL_MODULE_ID) {
 										return `export const sidebar = ${sidebarJson};\nexport const siteTitle = ${JSON.stringify(siteTitle)};`;
 									}
+								},
+								transform(code: string, id: string) {
+									if (!id.includes("emdash/block-components")) return;
+									const componentsEntry = new URL("./blocks/index.ts", import.meta.url).pathname;
+									return code + `\nimport { blockComponents as _slBlocks } from "${componentsEntry}";\nObject.assign(pluginBlockComponents, _slBlocks);`;
 								},
 							},
 						],

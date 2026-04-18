@@ -19,9 +19,9 @@ const { title, href, description, target } = node;
   <div class="emdash-block-wrap sl-link-card" data-block-type="star-lite.linkCard" data-block-props={JSON.stringify(node)}>
     <span class="sl-flex stack">
       <a href={href} target={target}>
-        <span class="title" set:html={title} />
+        <span class="title" data-sl-edit="title" set:html={title} />
       </a>
-      {description && <span class="description" set:html={description} />}
+      {description && <span class="description" data-sl-edit="description" set:html={description} />}
     </span>
     <Icon name="right-arrow" size="1.333em" class="icon" />
   </div>

@@ -7,7 +7,10 @@
 		"build": "astro build",
 		"start": "node ./dist/server/entry.mjs",
 		"preview": "astro preview",
-		"typecheck": "astro check"
+		"typecheck": "astro check",
+		"docker:build": "docker build -t my-docs .",
+		"docker:run": "docker run -p 4321:4321 -v my-docs-data:/app/data -v my-docs-uploads:/app/uploads my-docs",
+		"docker": "npm run docker:build && npm run docker:run"
 	},
 	"dependencies": {
 		"@astrojs/check": "^0.9.7",
@@ -15,10 +18,10 @@
 		"@astrojs/react": "^5.0.2",
 		"astro": "^6.1.3",
 		"better-sqlite3": "^12.8.0",
-		"emdash": "^0.3.0",
+		"emdash": "^0.5.0",
 		"react": "19.2.4",
 		"react-dom": "19.2.4",
-		"star-lite-docs": "github:gruntlord5/star-lite-docs"
+		"star-lite-docs": "^0.1.2"
 	},
 	"pnpm": {
 		"onlyBuiltDependencies": ["better-sqlite3", "esbuild"]

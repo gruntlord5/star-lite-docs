@@ -13,7 +13,7 @@ const { text, variant = 'default', size = 'medium' } = node;
 ---
 
 {text && (
-  <span class:list={['emdash-block-wrap', 'sl-badge', variant, size]} data-block-type="star-lite.badge" data-block-props={JSON.stringify(node)}>{text}</span>
+  <span class:list={['emdash-block-wrap', 'sl-badge', variant, size]} data-block-type="star-lite.badge" data-block-props={JSON.stringify(node)} data-sl-edit="text">{text}</span>
 )}
 
 <style>

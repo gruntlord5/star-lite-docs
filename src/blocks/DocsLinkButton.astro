@@ -20,7 +20,7 @@ const { text, href, icon, iconPlacement = 'end', variant = 'primary' } = node;
 {text && href && (
   <a class:list={['emdash-block-wrap', 'sl-link-button not-content', variant]} href={href} data-block-type="star-lite.linkButton" data-block-props={JSON.stringify(node)}>
     {icon && iconPlacement === 'start' && <Icon name={icon as keyof typeof Icons} size="1.5rem" />}
-    {text}
+    <span data-sl-edit="text">{text}</span>
     {icon && iconPlacement === 'end' && <Icon name={icon as keyof typeof Icons} size="1.5rem" />}
   </a>
 )}

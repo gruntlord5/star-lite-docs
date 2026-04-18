@@ -21,9 +21,9 @@ const renderedContent = content ? blockMarkdownToHtml(content) : '';
 
 <aside aria-label={displayTitle} class={`emdash-block-wrap starlight-aside starlight-aside--${type}`} data-block-type="star-lite.aside" data-block-props={JSON.stringify(node)}>
   <p class="starlight-aside__title" aria-hidden="true">
-    <Icon name={icons[type]} class="starlight-aside__icon" />{displayTitle}
+    <Icon name={icons[type]} class="starlight-aside__icon" /><span data-sl-edit="title">{displayTitle}</span>
   </p>
   {renderedContent && (
-    <div class="starlight-aside__content" set:html={renderedContent} />
+    <div class="starlight-aside__content" data-sl-edit="content" set:html={renderedContent} />
   )}
 </aside>

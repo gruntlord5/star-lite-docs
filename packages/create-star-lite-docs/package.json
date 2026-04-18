@@ -1,0 +1,13 @@
+{
+  "name": "create-star-lite-docs",
+  "version": "0.1.7",
+  "description": "Scaffold a Star-Lite Docs site",
+  "license": "MIT",
+  "author": "gruntlord5",
+  "bin": "./index.mjs",
+  "type": "module",
+  "keywords": ["create", "star-lite-docs", "starlight", "emdash", "docs"],
+  "publishConfig": {
+    "access": "public"
+  }
+}
