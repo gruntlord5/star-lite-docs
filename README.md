@@ -1,6 +1,6 @@
 # Star-Lite Docs
 
-A drop-in documentation theme that brings the power of [Starlight](https://github.com/withastro/starlight) documentation to [EmDash CMS](https://github.com/emdash-cms/emdash) to allow for a fully featured frontend editing expereince for documentation instead of using static MDX files on disk.
+A drop-in documentation theme that brings the power of [Starlight](https://github.com/withastro/starlight) documentation to [EmDash CMS](https://github.com/emdash-cms/emdash) to allow for a fully featured frontend editing experience for documentation instead of using static MDX files on disk.
 
 ## Features
 
@@ -20,9 +20,9 @@ A drop-in documentation theme that brings the power of [Starlight](https://githu
 
 **Editing**
 
-- **Visual inline editing** — toggle Edit in the emdash toolbar, click any text to edit in place, then hit Save in the toolbar. Thats it, your changes are live and ready to view.
+- **Visual inline editing** — toggle Edit in the emdash toolbar, click any text to edit in place, then hit Save in the toolbar. That's it, your changes are live and ready to view.
 - **Block edit forms** — hover any block in edit mode to reveal an Edit button and open an inline property editor for all the block fields, no need to take a trip to the admin page.
-- **Markdown editor** — click "Edit as MD" in the header to switch to a full-page markdown textarea with a save button. All content and blocks work with markdown so you can edit existing content and blocks as well as add new ones using the same markdown workflow you are used to in Starlight. Click save and see the markdown rendered immediantly on the page.
+- **Markdown editor** — click "Edit as MD" in the header to switch to a full-page markdown textarea with a save button. All content and blocks work with markdown so you can edit existing content and blocks as well as add new ones using the same markdown workflow you are used to in Starlight. Click save and see the markdown rendered immediately on the page.
 - **Copy Page MD** — one-click clipboard copy of any page as markdown using the header button
 
 ## Quickstart
