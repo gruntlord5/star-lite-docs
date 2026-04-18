@@ -37,8 +37,8 @@ async function main() {
   const title = await ask(`${CYAN}  Site title [My Docs]: ${NC}`) || "My Docs";
 
   let mode = "";
-  while (mode !== "1" && mode !== "2") {
-    mode = await ask(`${CYAN}  Deployment target ${NC}(1) Local development  (2) Docker: `);
+  while (mode !== "1" && mode !== "2" && mode !== "3") {
+    mode = await ask(`${CYAN}  Deployment target ${NC}(1) Local development  (2) Docker  (3) Cloudflare Workers: `);
   }
 
   rl.close();
@@ -53,7 +53,8 @@ async function main() {
   console.log(`${YELLOW}  Configuration summary:${NC}`);
   console.log(`    Directory:    ${GREEN}${dest}${NC}`);
   console.log(`    Title:        ${GREEN}${title}${NC}`);
-  console.log(`    Target:       ${GREEN}${mode === "1" ? "Local development" : "Docker"}${NC}`);
+  const targetLabels = { "1": "Local development", "2": "Docker", "3": "Cloudflare Workers" };
+  console.log(`    Target:       ${GREEN}${targetLabels[mode]}${NC}`);
   console.log("");
 
   // Step 2: Scaffold & Install
@@ -62,7 +63,8 @@ async function main() {
 
   const tmp = join(tmpdir(), "star-lite-docs-" + Date.now());
   execSync(`git clone --depth 1 https://github.com/gruntlord5/star-lite-docs.git "${tmp}"`, { stdio: "ignore" });
-  cpSync(join(tmp, "starter"), abs, { recursive: true });
+  const starterDir = mode === "3" ? "starter-cloudflare" : "starter";
+  cpSync(join(tmp, starterDir), abs, { recursive: true });
 
   const readme = readFileSync(join(tmp, "README.md"), "utf-8");
   rmSync(tmp, { recursive: true, force: true });
@@ -71,13 +73,21 @@ async function main() {
   const config = readFileSync(configPath, "utf-8");
   writeFileSync(configPath, config.replace('title: "My Docs"', `title: "${title}"`));
 
-  // Update package.json name and docker scripts with project name
+  // Update package.json name and docker/wrangler scripts with project name
   const projectName = dest.split("/").pop().replace(/[^a-z0-9-]/gi, "-").toLowerCase();
   const pkgPath = join(abs, "package.json");
   let pkg = readFileSync(pkgPath, "utf-8");
   pkg = pkg.replace(/"name": "my-docs"/g, `"name": "${projectName}"`);
   pkg = pkg.replaceAll("my-docs", projectName);
   writeFileSync(pkgPath, pkg);
+
+  // Update wrangler.jsonc for Cloudflare projects
+  const wranglerPath = join(abs, "wrangler.jsonc");
+  if (existsSync(wranglerPath)) {
+    let wrangler = readFileSync(wranglerPath, "utf-8");
+    wrangler = wrangler.replaceAll("my-docs", projectName);
+    writeFileSync(wranglerPath, wrangler);
+  }
 
   const blocks = markdownToBlocks(readme);
   const seed = {
@@ -136,19 +146,154 @@ async function main() {
     console.log("");
     console.log(`${CYAN}  To start:${NC}`);
     console.log(`    cd ${dest}`);
-    console.log(mode === "1" ? "    npm run dev" : "    npm run docker");
+    if (mode === "1") console.log("    npm run dev");
+    else if (mode === "2") console.log("    npm run docker");
+    else console.log("    npm run dev");
+    if (mode === "3") {
+      console.log("");
+      console.log(`${CYAN}  To deploy:${NC}`);
+      console.log(`    wrangler d1 create ${projectName}`);
+      console.log(`    # Update database_id in wrangler.jsonc`);
+      console.log(`    wrangler r2 bucket create ${projectName}-media`);
+      console.log(`    npm run deploy`);
+    }
     console.log("");
   } else {
-    if (mode === "1") {
+    if (mode === "3") {
       console.log("");
-      console.log(`${CYAN}  Starting dev server...${NC}`);
+      console.log(`${CYAN}  Deploying to Cloudflare Workers...${NC}`);
       console.log("");
-      execSync("npm run dev", { cwd: abs, stdio: "inherit" });
-    } else {
+
+      // Check wrangler auth
+      let authed = false;
+      try {
+        execSync("bun wrangler whoami", { cwd: abs, stdio: "pipe" });
+        authed = true;
+      } catch {
+        console.log(`${YELLOW}  Not logged into Cloudflare. Running wrangler login...${NC}`);
+        console.log("");
+        try {
+          execSync("bun wrangler login", { cwd: abs, stdio: "inherit" });
+          authed = true;
+        } catch {
+          console.log(`${YELLOW}  ⚠ Login failed or cancelled.${NC}`);
+        }
+      }
+
+      if (!authed) {
+        console.log("");
+        console.log(`${GREEN}╔══════════════════════════════════════════════╗${NC}`);
+        console.log(`${GREEN}║  ${BLUE}Setup complete!${GREEN}                              ║${NC}`);
+        console.log(`${GREEN}╚══════════════════════════════════════════════╝${NC}`);
+        console.log("");
+        console.log(`${CYAN}  To deploy manually:${NC}`);
+        console.log(`    cd ${dest}`);
+        console.log(`    bun wrangler login`);
+        console.log(`    bun wrangler d1 create ${projectName}`);
+        console.log(`    # Update database_id in wrangler.jsonc`);
+        console.log(`    bun wrangler r2 bucket create ${projectName}-media`);
+        console.log(`    bun run deploy`);
+        console.log(`    # Then visit your worker URL /_emdash/admin/setup`);
+        console.log("");
+      } else {
+        // Create D1
+        console.log(`${CYAN}  Creating D1 database...${NC}`);
+        let dbId;
+        try {
+          const d1Out = execSync(`bun wrangler d1 create ${projectName}`, { cwd: abs, encoding: "utf-8" });
+          const m = d1Out.match(/"database_id":\s*"([^"]+)"/);
+          if (m) dbId = m[1];
+        } catch {
+          const list = execSync(`bun wrangler d1 list`, { cwd: abs, encoding: "utf-8" });
+          const m = list.match(new RegExp(`([0-9a-f-]{36})\\s*│\\s*${projectName}\\s`));
+          if (m) dbId = m[1];
+        }
+        if (!dbId) { console.error("  Failed to create/find D1 database"); process.exit(1); }
+        console.log(`${GREEN}  ✓ D1 database: ${dbId}${NC}`);
+
+        // Update wrangler.jsonc
+        const wcfPath = join(abs, "wrangler.jsonc");
+        const wcf = readFileSync(wcfPath, "utf-8");
+        writeFileSync(wcfPath, wcf.replace('"database_id": "local"', `"database_id": "${dbId}"`));
+
+        // Create R2
+        console.log(`${CYAN}  Creating R2 bucket...${NC}`);
+        try { execSync(`bun wrangler r2 bucket create ${projectName}-media`, { cwd: abs, stdio: "pipe" }); } catch {}
+        console.log(`${GREEN}  ✓ R2 bucket: ${projectName}-media${NC}`);
+
+        // Delete stale KV if exists
+        try {
+          const kvList = execSync(`bun wrangler kv namespace list`, { cwd: abs, encoding: "utf-8" });
+          const kvm = kvList.match(new RegExp(`"id":\\s*"([^"]+)"[^}]*"title":\\s*"${projectName}-session"`));
+          if (kvm) execSync(`bun wrangler kv namespace delete --namespace-id ${kvm[1]}`, { cwd: abs, stdio: "pipe" });
+        } catch {}
+
+        // Build
+        console.log("");
+        console.log(`${CYAN}  Building...${NC}`);
+        execSync("bun astro build", { cwd: abs, stdio: "inherit" });
+
+        // Deploy
+        console.log("");
+        console.log(`${CYAN}  Deploying...${NC}`);
+        execSync("bun wrangler deploy", { cwd: abs, stdio: "inherit" });
+
+        // Run setup (migrations + admin user)
+        console.log("");
+        console.log(`${CYAN}  Running setup (migrations + admin user)...${NC}`);
+        const url = `https://${projectName}.buylisthydrogen.workers.dev`;
+        try {
+          execSync(`curl -s -X POST ${url}/_emdash/api/setup -H "Content-Type: application/json" -H "X-EmDash-Request: 1" -d '{"email":"admin@local","password":"changeme1234","title":"${title}"}'`, { stdio: "pipe", timeout: 30000 });
+          console.log(`${GREEN}  ✓ Admin user created (admin@local / changeme1234)${NC}`);
+        } catch {
+          console.log(`${YELLOW}  ⚠ Setup request failed — visit ${url}/_emdash/admin/setup to create your admin user${NC}`);
+        }
+
+        // Apply template seed
+        const seedPath = join(abs, ".emdash", "seed.json");
+        if (existsSync(seedPath)) {
+          console.log(`${CYAN}  Applying seed content...${NC}`);
+          const seedData = JSON.parse(readFileSync(seedPath, "utf-8"));
+          const stmts = [];
+          for (const page of seedData.content?.pages || []) {
+            const s = page.slug, t = page.data.title.replace(/'/g, "''");
+            const c = JSON.stringify(page.data.content).replace(/'/g, "''");
+            stmts.push(`INSERT INTO ec_pages (id, slug, locale, title, content, status, created_at, updated_at) VALUES ('${s}', '${s}', 'en', '${t}', '${c}', 'published', datetime('now'), datetime('now')) ON CONFLICT(slug, locale) DO UPDATE SET title='${t}', content='${c}';`);
+          }
+          for (const item of seedData.menus?.[0]?.items || []) {
+            const l = (item.label || "").replace(/'/g, "''"), u = (item.url || "").replace(/'/g, "''");
+            stmts.push(`UPDATE _emdash_menu_items SET label='${l}', custom_url='${u}' WHERE custom_url='/';`);
+          }
+          const sqlFile = join(abs, ".emdash", "seed.sql");
+          writeFileSync(sqlFile, stmts.join("\n"));
+          try {
+            execSync(`bun wrangler d1 execute ${projectName} --remote --file ${sqlFile}`, { cwd: abs, stdio: "pipe" });
+            console.log(`${GREEN}  ✓ Seed content applied${NC}`);
+          } catch {
+            console.log(`${YELLOW}  ⚠ Seed failed — content will be created on first visit${NC}`);
+          }
+        }
+
+        console.log("");
+        console.log(`${GREEN}╔══════════════════════════════════════════════╗${NC}`);
+        console.log(`${GREEN}║  ${BLUE}Deployed!${GREEN}                                    ║${NC}`);
+        console.log(`${GREEN}╚══════════════════════════════════════════════╝${NC}`);
+        console.log("");
+        console.log(`${CYAN}  Site:  ${NC}${url}`);
+        console.log(`${CYAN}  Admin: ${NC}${url}/_emdash/admin`);
+        console.log(`${CYAN}  Login: ${NC}admin@local / changeme1234`);
+        console.log("");
+      }
+    } else if (mode === "2") {
       console.log("");
       console.log(`${CYAN}  Building and starting Docker container...${NC}`);
       console.log("");
       execSync("npm run docker", { cwd: abs, stdio: "inherit" });
+    } else {
+      console.log("");
+      console.log(`${CYAN}  Starting dev server...${NC}`);
+      console.log("");
+      execSync("npm run dev", { cwd: abs, stdio: "inherit" });
     }
   }
 }

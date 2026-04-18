@@ -1,0 +1,1677 @@
+{
+  "version": "1",
+  "meta": {
+    "name": "star-lite-starter",
+    "description": "Starter content for a Star-Lite Docs site."
+  },
+  "menus": [
+    {
+      "name": "docs-sidebar",
+      "label": "Docs sidebar",
+      "items": [
+        {
+          "type": "custom",
+          "label": "Getting Started",
+          "url": "/getting-started"
+        }
+      ]
+    }
+  ],
+  "content": {
+    "pages": [
+      {
+        "id": "welcome",
+        "slug": "index",
+        "status": "published",
+        "data": {
+          "title": "Welcome",
+          "content": [
+            {
+              "_type": "docs.hero",
+              "_key": "welcome-hero",
+              "tagline": "A drop-in Starlight-style docs theme for EmDash CMS.",
+              "imageSrc": "/houston.webp",
+              "imageAlt": "Houston, Starlight's mascot",
+              "actionsJson": "[{\"text\": \"View Example Page\", \"link\": \"/getting-started\", \"icon\": \"right-arrow\", \"variant\": \"primary\"}, {\"text\": \"Edit the sidebar\", \"link\": \"/_emdash/admin/menus/docs-sidebar\", \"variant\": \"secondary\"}]"
+            }
+          ]
+        }
+      },
+      {
+        "id": "getting-started",
+        "slug": "getting-started",
+        "status": "published",
+        "data": {
+          "title": "Getting Started",
+          "content": [
+            {
+              "_type": "block",
+              "_key": "k1",
+              "style": "h1",
+              "markDefs": [],
+              "children": [
+                {
+                  "_type": "span",
+                  "_key": "k0",
+                  "text": "Star-Lite Docs",
+                  "marks": []
+                }
+              ]
+            },
+            {
+              "_type": "block",
+              "_key": "k9",
+              "style": "normal",
+              "markDefs": [
+                {
+                  "_key": "k3",
+                  "_type": "link",
+                  "href": "https://github.com/withastro/starlight"
+                },
+                {
+                  "_key": "k6",
+                  "_type": "link",
+                  "href": "https://github.com/emdash-cms/emdash"
+                }
+              ],
+              "children": [
+                {
+                  "_type": "span",
+                  "_key": "k2",
+                  "text": "A drop-in documentation theme that brings the power of ",
+                  "marks": []
+                },
+                {
+                  "_type": "span",
+                  "_key": "k4",
+                  "text": "Starlight",
+                  "marks": [
+                    "k3"
+                  ]
+                },
+                {
+                  "_type": "span",
+                  "_key": "k5",
+                  "text": " documentation to ",
+                  "marks": []
+                },
+                {
+                  "_type": "span",
+                  "_key": "k7",
+                  "text": "EmDash CMS",
+                  "marks": [
+                    "k6"
+                  ]
+                },
+                {
+                  "_type": "span",
+                  "_key": "k8",
+                  "text": " to allow for a fully featured frontend editing expereince for documentation instead of using static MDX files on disk.",
+                  "marks": []
+                }
+              ]
+            },
+            {
+              "_type": "block",
+              "_key": "kb",
+              "style": "h2",
+              "markDefs": [],
+              "children": [
+                {
+                  "_type": "span",
+                  "_key": "ka",
+                  "text": "Features",
+                  "marks": []
+                }
+              ]
+            },
+            {
+              "_type": "block",
+              "_key": "kd",
+              "style": "normal",
+              "markDefs": [],
+              "children": [
+                {
+                  "_type": "span",
+                  "_key": "kc",
+                  "text": "Layout & theming",
+                  "marks": [
+                    "strong"
+                  ]
+                }
+              ]
+            },
+            {
+              "_type": "block",
+              "_key": "kf",
+              "style": "normal",
+              "listItem": "bullet",
+              "level": 1,
+              "markDefs": [],
+              "children": [
+                {
+                  "_type": "span",
+                  "_key": "ke",
+                  "text": "Starlight-style layout and theme with collapsible sidebar, and table of contents",
+                  "marks": []
+                }
+              ]
+            },
+            {
+              "_type": "block",
+              "_key": "ki",
+              "style": "normal",
+              "listItem": "bullet",
+              "level": 1,
+              "markDefs": [],
+              "children": [
+                {
+                  "_type": "span",
+                  "_key": "kg",
+                  "text": "Ctrl+K search bar and modal using ",
+                  "marks": []
+                },
+                {
+                  "_type": "span",
+                  "_key": "kh",
+                  "text": "/api/search",
+                  "marks": [
+                    "code"
+                  ]
+                }
+              ]
+            },
+            {
+              "_type": "block",
+              "_key": "kk",
+              "style": "normal",
+              "listItem": "bullet",
+              "level": 1,
+              "markDefs": [],
+              "children": [
+                {
+                  "_type": "span",
+                  "_key": "kj",
+                  "text": "Dark / light / auto theme toggle",
+                  "marks": []
+                }
+              ]
+            },
+            {
+              "_type": "block",
+              "_key": "km",
+              "style": "normal",
+              "listItem": "bullet",
+              "level": 1,
+              "markDefs": [],
+              "children": [
+                {
+                  "_type": "span",
+                  "_key": "kl",
+                  "text": "Expressive Code syntax highlighting with bundled Night Owl themes",
+                  "marks": []
+                }
+              ]
+            },
+            {
+              "_type": "block",
+              "_key": "ko",
+              "style": "normal",
+              "markDefs": [],
+              "children": [
+                {
+                  "_type": "span",
+                  "_key": "kn",
+                  "text": "Content management",
+                  "marks": [
+                    "strong"
+                  ]
+                }
+              ]
+            },
+            {
+              "_type": "block",
+              "_key": "kq",
+              "style": "normal",
+              "listItem": "bullet",
+              "level": 1,
+              "markDefs": [],
+              "children": [
+                {
+                  "_type": "span",
+                  "_key": "kp",
+                  "text": "Drop-in emdash plugin \u2014 one integration, no schema or plugin setup",
+                  "marks": []
+                }
+              ]
+            },
+            {
+              "_type": "block",
+              "_key": "kw",
+              "style": "normal",
+              "listItem": "bullet",
+              "level": 1,
+              "markDefs": [],
+              "children": [
+                {
+                  "_type": "span",
+                  "_key": "kr",
+                  "text": "Zero-config self-seeding \u2014 first request creates the ",
+                  "marks": []
+                },
+                {
+                  "_type": "span",
+                  "_key": "ks",
+                  "text": "pages",
+                  "marks": [
+                    "code"
+                  ]
+                },
+                {
+                  "_type": "span",
+                  "_key": "kt",
+                  "text": " collection, ",
+                  "marks": []
+                },
+                {
+                  "_type": "span",
+                  "_key": "ku",
+                  "text": "docs-sidebar",
+                  "marks": [
+                    "code"
+                  ]
+                },
+                {
+                  "_type": "span",
+                  "_key": "kv",
+                  "text": " menu, and a welcome page with Houston",
+                  "marks": []
+                }
+              ]
+            },
+            {
+              "_type": "block",
+              "_key": "ky",
+              "style": "normal",
+              "listItem": "bullet",
+              "level": 1,
+              "markDefs": [],
+              "children": [
+                {
+                  "_type": "span",
+                  "_key": "kx",
+                  "text": "Menu-driven sidebar \u2014 edit navigation from the emdash admin, no need to rebuild for any changes you make while retaining full control over the menu",
+                  "marks": []
+                }
+              ]
+            },
+            {
+              "_type": "block",
+              "_key": "k10",
+              "style": "normal",
+              "listItem": "bullet",
+              "level": 1,
+              "markDefs": [],
+              "children": [
+                {
+                  "_type": "span",
+                  "_key": "kz",
+                  "text": "14 rich Portable Text block types from Starlight: hero, tabs, cards, asides, steps, badges, file trees, icons, link buttons, code, images, and raw HTML",
+                  "marks": []
+                }
+              ]
+            },
+            {
+              "_type": "block",
+              "_key": "k12",
+              "style": "normal",
+              "markDefs": [],
+              "children": [
+                {
+                  "_type": "span",
+                  "_key": "k11",
+                  "text": "Editing",
+                  "marks": [
+                    "strong"
+                  ]
+                }
+              ]
+            },
+            {
+              "_type": "block",
+              "_key": "k15",
+              "style": "normal",
+              "listItem": "bullet",
+              "level": 1,
+              "markDefs": [],
+              "children": [
+                {
+                  "_type": "span",
+                  "_key": "k13",
+                  "text": "Visual inline editing",
+                  "marks": [
+                    "strong"
+                  ]
+                },
+                {
+                  "_type": "span",
+                  "_key": "k14",
+                  "text": " \u2014 toggle Edit in the emdash toolbar, click any text to edit in place, then hit Save in the toolbar. Thats it, your changes are live and ready to view.",
+                  "marks": []
+                }
+              ]
+            },
+            {
+              "_type": "block",
+              "_key": "k18",
+              "style": "normal",
+              "listItem": "bullet",
+              "level": 1,
+              "markDefs": [],
+              "children": [
+                {
+                  "_type": "span",
+                  "_key": "k16",
+                  "text": "Block edit forms",
+                  "marks": [
+                    "strong"
+                  ]
+                },
+                {
+                  "_type": "span",
+                  "_key": "k17",
+                  "text": " \u2014 hover any block in edit mode to reveal an Edit button and open an inline property editor for all the block fields, no need to take a trip to the admin page.",
+                  "marks": []
+                }
+              ]
+            },
+            {
+              "_type": "block",
+              "_key": "k1b",
+              "style": "normal",
+              "listItem": "bullet",
+              "level": 1,
+              "markDefs": [],
+              "children": [
+                {
+                  "_type": "span",
+                  "_key": "k19",
+                  "text": "Markdown editor",
+                  "marks": [
+                    "strong"
+                  ]
+                },
+                {
+                  "_type": "span",
+                  "_key": "k1a",
+                  "text": " \u2014 click \"Edit as MD\" in the header to switch to a full-page markdown textarea with a save button. All content and blocks work with markdown so you can edit existing content and blocks as well as add new ones using the same markdown workflow you are used to in Starlight. Click save and see the markdown rendered immediantly on the page.",
+                  "marks": []
+                }
+              ]
+            },
+            {
+              "_type": "block",
+              "_key": "k1e",
+              "style": "normal",
+              "listItem": "bullet",
+              "level": 1,
+              "markDefs": [],
+              "children": [
+                {
+                  "_type": "span",
+                  "_key": "k1c",
+                  "text": "Copy Page MD",
+                  "marks": [
+                    "strong"
+                  ]
+                },
+                {
+                  "_type": "span",
+                  "_key": "k1d",
+                  "text": " \u2014 one-click clipboard copy of any page as markdown using the header button",
+                  "marks": []
+                }
+              ]
+            },
+            {
+              "_type": "block",
+              "_key": "k1g",
+              "style": "h2",
+              "markDefs": [],
+              "children": [
+                {
+                  "_type": "span",
+                  "_key": "k1f",
+                  "text": "Quickstart",
+                  "marks": []
+                }
+              ]
+            },
+            {
+              "_type": "code",
+              "_key": "k1h",
+              "language": "bash",
+              "code": "git clone https://github.com/gruntlord5/star-lite-docs.git\ncd star-lite-docs/starter\nbun install\nbun run dev"
+            },
+            {
+              "_type": "block",
+              "_key": "k1n",
+              "style": "normal",
+              "markDefs": [],
+              "children": [
+                {
+                  "_type": "span",
+                  "_key": "k1i",
+                  "text": "Open ",
+                  "marks": []
+                },
+                {
+                  "_type": "span",
+                  "_key": "k1j",
+                  "text": "http://localhost:4321/_emdash/admin",
+                  "marks": [
+                    "code"
+                  ]
+                },
+                {
+                  "_type": "span",
+                  "_key": "k1k",
+                  "text": " to create your admin user, then visit ",
+                  "marks": []
+                },
+                {
+                  "_type": "span",
+                  "_key": "k1l",
+                  "text": "/",
+                  "marks": [
+                    "code"
+                  ]
+                },
+                {
+                  "_type": "span",
+                  "_key": "k1m",
+                  "text": " to see the themed welcome page.",
+                  "marks": []
+                }
+              ]
+            },
+            {
+              "_type": "block",
+              "_key": "k1p",
+              "style": "h2",
+              "markDefs": [],
+              "children": [
+                {
+                  "_type": "span",
+                  "_key": "k1o",
+                  "text": "Add to an existing emdash site",
+                  "marks": []
+                }
+              ]
+            },
+            {
+              "_type": "code",
+              "_key": "k1q",
+              "language": "bash",
+              "code": "bunx astro add star-lite-docs"
+            },
+            {
+              "_type": "block",
+              "_key": "k1w",
+              "style": "normal",
+              "markDefs": [],
+              "children": [
+                {
+                  "_type": "span",
+                  "_key": "k1r",
+                  "text": "This installs the package and wires ",
+                  "marks": []
+                },
+                {
+                  "_type": "span",
+                  "_key": "k1s",
+                  "text": "starLiteDocs()",
+                  "marks": [
+                    "code"
+                  ]
+                },
+                {
+                  "_type": "span",
+                  "_key": "k1t",
+                  "text": " into your ",
+                  "marks": []
+                },
+                {
+                  "_type": "span",
+                  "_key": "k1u",
+                  "text": "astro.config.mjs",
+                  "marks": [
+                    "code"
+                  ]
+                },
+                {
+                  "_type": "span",
+                  "_key": "k1v",
+                  "text": ". Block components, the Houston welcome page image, and route conflict warnings are all handled automatically at build time.",
+                  "marks": []
+                }
+              ]
+            },
+            {
+              "_type": "block",
+              "_key": "k1y",
+              "style": "h2",
+              "markDefs": [],
+              "children": [
+                {
+                  "_type": "span",
+                  "_key": "k1x",
+                  "text": "Deploy with Docker",
+                  "marks": []
+                }
+              ]
+            },
+            {
+              "_type": "block",
+              "_key": "k20",
+              "style": "normal",
+              "markDefs": [],
+              "children": [
+                {
+                  "_type": "span",
+                  "_key": "k1z",
+                  "text": "The starter includes a Dockerfile for production deployments. Data and uploads persist across container restarts via Docker volumes.",
+                  "marks": []
+                }
+              ]
+            },
+            {
+              "_type": "code",
+              "_key": "k21",
+              "language": "bash",
+              "code": "# Quick start \u2014 build and run in one command\nbun run docker"
+            },
+            {
+              "_type": "block",
+              "_key": "k25",
+              "style": "normal",
+              "markDefs": [],
+              "children": [
+                {
+                  "_type": "span",
+                  "_key": "k22",
+                  "text": "This builds the image and runs it at ",
+                  "marks": []
+                },
+                {
+                  "_type": "span",
+                  "_key": "k23",
+                  "text": "http://localhost:4321",
+                  "marks": [
+                    "code"
+                  ]
+                },
+                {
+                  "_type": "span",
+                  "_key": "k24",
+                  "text": ".",
+                  "marks": []
+                }
+              ]
+            },
+            {
+              "_type": "block",
+              "_key": "k27",
+              "style": "normal",
+              "markDefs": [],
+              "children": [
+                {
+                  "_type": "span",
+                  "_key": "k26",
+                  "text": "For production, run the container detached with a restart policy:",
+                  "marks": []
+                }
+              ]
+            },
+            {
+              "_type": "code",
+              "_key": "k28",
+              "language": "bash",
+              "code": "docker build -t my-docs .\n\ndocker run -d \\\n  --name my-docs \\\n  --restart unless-stopped \\\n  -p 4321:4321 \\\n  -v my-docs-data:/app/data \\\n  -v my-docs-uploads:/app/uploads \\\n  my-docs"
+            },
+            {
+              "_type": "block",
+              "_key": "k2a",
+              "style": "h2",
+              "markDefs": [],
+              "children": [
+                {
+                  "_type": "span",
+                  "_key": "k29",
+                  "text": "Visual editing",
+                  "marks": []
+                }
+              ]
+            },
+            {
+              "_type": "block",
+              "_key": "k2c",
+              "style": "normal",
+              "markDefs": [],
+              "children": [
+                {
+                  "_type": "span",
+                  "_key": "k2b",
+                  "text": "Star-Lite adds three editing modes on top of emdash, all implemented as a plugin with no emdash patches.",
+                  "marks": []
+                }
+              ]
+            },
+            {
+              "_type": "block",
+              "_key": "k2e",
+              "style": "h3",
+              "markDefs": [],
+              "children": [
+                {
+                  "_type": "span",
+                  "_key": "k2d",
+                  "text": "Inline editing",
+                  "marks": []
+                }
+              ]
+            },
+            {
+              "_type": "block",
+              "_key": "k2i",
+              "style": "normal",
+              "listItem": "number",
+              "level": 1,
+              "markDefs": [],
+              "children": [
+                {
+                  "_type": "span",
+                  "_key": "k2f",
+                  "text": "Toggle ",
+                  "marks": []
+                },
+                {
+                  "_type": "span",
+                  "_key": "k2g",
+                  "text": "Edit",
+                  "marks": [
+                    "strong"
+                  ]
+                },
+                {
+                  "_type": "span",
+                  "_key": "k2h",
+                  "text": " in the emdash toolbar (bottom of the page)",
+                  "marks": []
+                }
+              ]
+            },
+            {
+              "_type": "block",
+              "_key": "k2k",
+              "style": "normal",
+              "listItem": "number",
+              "level": 1,
+              "markDefs": [],
+              "children": [
+                {
+                  "_type": "span",
+                  "_key": "k2j",
+                  "text": "Click any text \u2014 headings, paragraphs, hero taglines, card titles, badge text, etc.",
+                  "marks": []
+                }
+              ]
+            },
+            {
+              "_type": "block",
+              "_key": "k2m",
+              "style": "normal",
+              "listItem": "number",
+              "level": 1,
+              "markDefs": [],
+              "children": [
+                {
+                  "_type": "span",
+                  "_key": "k2l",
+                  "text": "Edit directly in the page",
+                  "marks": []
+                }
+              ]
+            },
+            {
+              "_type": "block",
+              "_key": "k2q",
+              "style": "normal",
+              "listItem": "number",
+              "level": 1,
+              "markDefs": [],
+              "children": [
+                {
+                  "_type": "span",
+                  "_key": "k2n",
+                  "text": "A ",
+                  "marks": []
+                },
+                {
+                  "_type": "span",
+                  "_key": "k2o",
+                  "text": "Save",
+                  "marks": [
+                    "strong"
+                  ]
+                },
+                {
+                  "_type": "span",
+                  "_key": "k2p",
+                  "text": " button appears in the toolbar \u2014 click to persist and reload",
+                  "marks": []
+                }
+              ]
+            },
+            {
+              "_type": "block",
+              "_key": "k2w",
+              "style": "normal",
+              "markDefs": [],
+              "children": [
+                {
+                  "_type": "span",
+                  "_key": "k2r",
+                  "text": "Inline editing works on any element with a ",
+                  "marks": []
+                },
+                {
+                  "_type": "span",
+                  "_key": "k2s",
+                  "text": "data-sl-edit",
+                  "marks": [
+                    "code"
+                  ]
+                },
+                {
+                  "_type": "span",
+                  "_key": "k2t",
+                  "text": " attribute. Star-Lite tags all its block components with this attribute, and standard Portable Text blocks are preprocessed into ",
+                  "marks": []
+                },
+                {
+                  "_type": "span",
+                  "_key": "k2u",
+                  "text": "docs.html",
+                  "marks": [
+                    "code"
+                  ]
+                },
+                {
+                  "_type": "span",
+                  "_key": "k2v",
+                  "text": " blocks that support it too.",
+                  "marks": []
+                }
+              ]
+            },
+            {
+              "_type": "block",
+              "_key": "k2y",
+              "style": "h3",
+              "markDefs": [],
+              "children": [
+                {
+                  "_type": "span",
+                  "_key": "k2x",
+                  "text": "Block edit form",
+                  "marks": []
+                }
+              ]
+            },
+            {
+              "_type": "block",
+              "_key": "k32",
+              "style": "normal",
+              "markDefs": [],
+              "children": [
+                {
+                  "_type": "span",
+                  "_key": "k2z",
+                  "text": "With Edit mode on, hover any block to see a dashed blue outline and an ",
+                  "marks": []
+                },
+                {
+                  "_type": "span",
+                  "_key": "k30",
+                  "text": "Edit",
+                  "marks": [
+                    "strong"
+                  ]
+                },
+                {
+                  "_type": "span",
+                  "_key": "k31",
+                  "text": " button in the top-right corner. Clicking it opens an inline form showing all the block's properties (tagline, image src, action URLs, etc.). Save persists the changes and reloads.",
+                  "marks": []
+                }
+              ]
+            },
+            {
+              "_type": "block",
+              "_key": "k34",
+              "style": "h3",
+              "markDefs": [],
+              "children": [
+                {
+                  "_type": "span",
+                  "_key": "k33",
+                  "text": "Markdown editor",
+                  "marks": []
+                }
+              ]
+            },
+            {
+              "_type": "block",
+              "_key": "k3a",
+              "style": "normal",
+              "markDefs": [],
+              "children": [
+                {
+                  "_type": "span",
+                  "_key": "k35",
+                  "text": "Click ",
+                  "marks": []
+                },
+                {
+                  "_type": "span",
+                  "_key": "k36",
+                  "text": "Edit as MD",
+                  "marks": [
+                    "strong"
+                  ]
+                },
+                {
+                  "_type": "span",
+                  "_key": "k37",
+                  "text": " in the header (visible when Edit mode is on). This switches to a full-page markdown textarea. Custom blocks appear as ",
+                  "marks": []
+                },
+                {
+                  "_type": "span",
+                  "_key": "k38",
+                  "text": "<!--ec:block \u2026-->",
+                  "marks": [
+                    "code"
+                  ]
+                },
+                {
+                  "_type": "span",
+                  "_key": "k39",
+                  "text": " fences and round-trip safely. Click Save to persist, or Cancel to return to the rendered view.",
+                  "marks": []
+                }
+              ]
+            },
+            {
+              "_type": "block",
+              "_key": "k3c",
+              "style": "h2",
+              "markDefs": [],
+              "children": [
+                {
+                  "_type": "span",
+                  "_key": "k3b",
+                  "text": "Configuration",
+                  "marks": []
+                }
+              ]
+            },
+            {
+              "_type": "code",
+              "_key": "k3d",
+              "language": "ts",
+              "code": "starLiteDocs({\n  // Site title \u2014 shown in the header and <title>.\n  // Overridden at runtime by emdash's Settings > Site > Title if set.\n  title: \"My Docs\",\n\n  // Static sidebar config. Omit to use the `docs-sidebar` emdash menu\n  // (editable from the admin UI, no rebuild needed).\n  sidebar: [\n    {\n      label: \"Guide\",\n      items: [\n        { label: \"Getting Started\", link: \"/getting-started\" },\n        { label: \"Installation\", link: \"/install\" },\n      ],\n    },\n  ],\n\n  // Expressive Code options, or `false` to disable it entirely.\n  expressiveCode: { /* AstroExpressiveCodeOptions */ },\n});"
+            },
+            {
+              "_type": "block",
+              "_key": "k3f",
+              "style": "h2",
+              "markDefs": [],
+              "children": [
+                {
+                  "_type": "span",
+                  "_key": "k3e",
+                  "text": "Block types",
+                  "marks": []
+                }
+              ]
+            },
+            {
+              "_type": "block",
+              "_key": "k3h",
+              "style": "normal",
+              "markDefs": [],
+              "children": [
+                {
+                  "_type": "span",
+                  "_key": "k3g",
+                  "text": "| Block | Description |",
+                  "marks": []
+                }
+              ]
+            },
+            {
+              "_type": "block",
+              "_key": "k3j",
+              "style": "normal",
+              "markDefs": [],
+              "children": [
+                {
+                  "_type": "span",
+                  "_key": "k3i",
+                  "text": "| --- | --- |",
+                  "marks": []
+                }
+              ]
+            },
+            {
+              "_type": "block",
+              "_key": "k3n",
+              "style": "normal",
+              "markDefs": [],
+              "children": [
+                {
+                  "_type": "span",
+                  "_key": "k3k",
+                  "text": "| ",
+                  "marks": []
+                },
+                {
+                  "_type": "span",
+                  "_key": "k3l",
+                  "text": "docs.hero",
+                  "marks": [
+                    "code"
+                  ]
+                },
+                {
+                  "_type": "span",
+                  "_key": "k3m",
+                  "text": " | Splash hero with title, tagline, image, and action buttons |",
+                  "marks": []
+                }
+              ]
+            },
+            {
+              "_type": "block",
+              "_key": "k3r",
+              "style": "normal",
+              "markDefs": [],
+              "children": [
+                {
+                  "_type": "span",
+                  "_key": "k3o",
+                  "text": "| ",
+                  "marks": []
+                },
+                {
+                  "_type": "span",
+                  "_key": "k3p",
+                  "text": "docs.image",
+                  "marks": [
+                    "code"
+                  ]
+                },
+                {
+                  "_type": "span",
+                  "_key": "k3q",
+                  "text": " | Standalone image with editable src and alt |",
+                  "marks": []
+                }
+              ]
+            },
+            {
+              "_type": "block",
+              "_key": "k3v",
+              "style": "normal",
+              "markDefs": [],
+              "children": [
+                {
+                  "_type": "span",
+                  "_key": "k3s",
+                  "text": "| ",
+                  "marks": []
+                },
+                {
+                  "_type": "span",
+                  "_key": "k3t",
+                  "text": "docs.html",
+                  "marks": [
+                    "code"
+                  ]
+                },
+                {
+                  "_type": "span",
+                  "_key": "k3u",
+                  "text": " | Raw HTML passthrough (also used for preprocessed text blocks) |",
+                  "marks": []
+                }
+              ]
+            },
+            {
+              "_type": "block",
+              "_key": "k3z",
+              "style": "normal",
+              "markDefs": [],
+              "children": [
+                {
+                  "_type": "span",
+                  "_key": "k3w",
+                  "text": "| ",
+                  "marks": []
+                },
+                {
+                  "_type": "span",
+                  "_key": "k3x",
+                  "text": "code",
+                  "marks": [
+                    "code"
+                  ]
+                },
+                {
+                  "_type": "span",
+                  "_key": "k3y",
+                  "text": " | Expressive Code syntax-highlighted block |",
+                  "marks": []
+                }
+              ]
+            },
+            {
+              "_type": "block",
+              "_key": "k43",
+              "style": "normal",
+              "markDefs": [],
+              "children": [
+                {
+                  "_type": "span",
+                  "_key": "k40",
+                  "text": "| ",
+                  "marks": []
+                },
+                {
+                  "_type": "span",
+                  "_key": "k41",
+                  "text": "star-lite.tabs",
+                  "marks": [
+                    "code"
+                  ]
+                },
+                {
+                  "_type": "span",
+                  "_key": "k42",
+                  "text": " | Tabbed content panels |",
+                  "marks": []
+                }
+              ]
+            },
+            {
+              "_type": "block",
+              "_key": "k47",
+              "style": "normal",
+              "markDefs": [],
+              "children": [
+                {
+                  "_type": "span",
+                  "_key": "k44",
+                  "text": "| ",
+                  "marks": []
+                },
+                {
+                  "_type": "span",
+                  "_key": "k45",
+                  "text": "star-lite.card",
+                  "marks": [
+                    "code"
+                  ]
+                },
+                {
+                  "_type": "span",
+                  "_key": "k46",
+                  "text": " | Content card with optional icon and color |",
+                  "marks": []
+                }
+              ]
+            },
+            {
+              "_type": "block",
+              "_key": "k4b",
+              "style": "normal",
+              "markDefs": [],
+              "children": [
+                {
+                  "_type": "span",
+                  "_key": "k48",
+                  "text": "| ",
+                  "marks": []
+                },
+                {
+                  "_type": "span",
+                  "_key": "k49",
+                  "text": "star-lite.cardGrid",
+                  "marks": [
+                    "code"
+                  ]
+                },
+                {
+                  "_type": "span",
+                  "_key": "k4a",
+                  "text": " | Grid layout for cards |",
+                  "marks": []
+                }
+              ]
+            },
+            {
+              "_type": "block",
+              "_key": "k4f",
+              "style": "normal",
+              "markDefs": [],
+              "children": [
+                {
+                  "_type": "span",
+                  "_key": "k4c",
+                  "text": "| ",
+                  "marks": []
+                },
+                {
+                  "_type": "span",
+                  "_key": "k4d",
+                  "text": "star-lite.linkCard",
+                  "marks": [
+                    "code"
+                  ]
+                },
+                {
+                  "_type": "span",
+                  "_key": "k4e",
+                  "text": " | Navigation card with title, description, and link |",
+                  "marks": []
+                }
+              ]
+            },
+            {
+              "_type": "block",
+              "_key": "k4j",
+              "style": "normal",
+              "markDefs": [],
+              "children": [
+                {
+                  "_type": "span",
+                  "_key": "k4g",
+                  "text": "| ",
+                  "marks": []
+                },
+                {
+                  "_type": "span",
+                  "_key": "k4h",
+                  "text": "star-lite.aside",
+                  "marks": [
+                    "code"
+                  ]
+                },
+                {
+                  "_type": "span",
+                  "_key": "k4i",
+                  "text": " | Callout box \u2014 note, tip, caution, or danger |",
+                  "marks": []
+                }
+              ]
+            },
+            {
+              "_type": "block",
+              "_key": "k4n",
+              "style": "normal",
+              "markDefs": [],
+              "children": [
+                {
+                  "_type": "span",
+                  "_key": "k4k",
+                  "text": "| ",
+                  "marks": []
+                },
+                {
+                  "_type": "span",
+                  "_key": "k4l",
+                  "text": "star-lite.badge",
+                  "marks": [
+                    "code"
+                  ]
+                },
+                {
+                  "_type": "span",
+                  "_key": "k4m",
+                  "text": " | Inline status badge |",
+                  "marks": []
+                }
+              ]
+            },
+            {
+              "_type": "block",
+              "_key": "k4r",
+              "style": "normal",
+              "markDefs": [],
+              "children": [
+                {
+                  "_type": "span",
+                  "_key": "k4o",
+                  "text": "| ",
+                  "marks": []
+                },
+                {
+                  "_type": "span",
+                  "_key": "k4p",
+                  "text": "star-lite.fileTree",
+                  "marks": [
+                    "code"
+                  ]
+                },
+                {
+                  "_type": "span",
+                  "_key": "k4q",
+                  "text": " | File and directory tree |",
+                  "marks": []
+                }
+              ]
+            },
+            {
+              "_type": "block",
+              "_key": "k4v",
+              "style": "normal",
+              "markDefs": [],
+              "children": [
+                {
+                  "_type": "span",
+                  "_key": "k4s",
+                  "text": "| ",
+                  "marks": []
+                },
+                {
+                  "_type": "span",
+                  "_key": "k4t",
+                  "text": "star-lite.icon",
+                  "marks": [
+                    "code"
+                  ]
+                },
+                {
+                  "_type": "span",
+                  "_key": "k4u",
+                  "text": " | Inline icon from the Starlight icon set |",
+                  "marks": []
+                }
+              ]
+            },
+            {
+              "_type": "block",
+              "_key": "k4z",
+              "style": "normal",
+              "markDefs": [],
+              "children": [
+                {
+                  "_type": "span",
+                  "_key": "k4w",
+                  "text": "| ",
+                  "marks": []
+                },
+                {
+                  "_type": "span",
+                  "_key": "k4x",
+                  "text": "star-lite.linkButton",
+                  "marks": [
+                    "code"
+                  ]
+                },
+                {
+                  "_type": "span",
+                  "_key": "k4y",
+                  "text": " | Styled link rendered as a pill button |",
+                  "marks": []
+                }
+              ]
+            },
+            {
+              "_type": "block",
+              "_key": "k53",
+              "style": "normal",
+              "markDefs": [],
+              "children": [
+                {
+                  "_type": "span",
+                  "_key": "k50",
+                  "text": "| ",
+                  "marks": []
+                },
+                {
+                  "_type": "span",
+                  "_key": "k51",
+                  "text": "star-lite.steps",
+                  "marks": [
+                    "code"
+                  ]
+                },
+                {
+                  "_type": "span",
+                  "_key": "k52",
+                  "text": " | Numbered step-by-step instructions |",
+                  "marks": []
+                }
+              ]
+            },
+            {
+              "_type": "block",
+              "_key": "k55",
+              "style": "h2",
+              "markDefs": [],
+              "children": [
+                {
+                  "_type": "span",
+                  "_key": "k54",
+                  "text": "API",
+                  "marks": []
+                }
+              ]
+            },
+            {
+              "_type": "code",
+              "_key": "k56",
+              "language": "ts",
+              "code": "import {\n  starLiteDocs,        // Astro integration (blocks auto-registered at build)\n  starLiteBlocks,      // emdash plugin descriptor (only needed for advanced setups)\n  preprocessBlocks,    // PT normalizer (headings, tables, images, text \u2192 docs.html)\n  preprocessImages,    // image-only subset\n  loadSidebarFromMenu, // resolve emdash menu \u2192 SidebarConfig[]\n  ensurePagesCollection, // idempotent seed bootstrap\n  defaultSeed,         // the SeedFile shipped by the plugin\n  buildSidebar,        // build sidebar tree from flat config\n  markCurrent,         // mark the active sidebar item by slug\n} from \"star-lite-docs\";\n\nimport type {\n  StarLiteDocsOptions,\n  StarLiteDocsConfig,\n  SidebarConfig,\n  SidebarEntry,\n  SidebarLink,\n  SidebarGroup,\n} from \"star-lite-docs\";"
+            },
+            {
+              "_type": "block",
+              "_key": "k58",
+              "style": "normal",
+              "markDefs": [],
+              "children": [
+                {
+                  "_type": "span",
+                  "_key": "k57",
+                  "text": "Astro components are available at subpath imports:",
+                  "marks": []
+                }
+              ]
+            },
+            {
+              "_type": "code",
+              "_key": "k59",
+              "language": "ts",
+              "code": "import DocsLayout from \"star-lite-docs/layout\";"
+            },
+            {
+              "_type": "block",
+              "_key": "k5b",
+              "style": "h2",
+              "markDefs": [],
+              "children": [
+                {
+                  "_type": "span",
+                  "_key": "k5a",
+                  "text": "How it works",
+                  "marks": []
+                }
+              ]
+            },
+            {
+              "_type": "block",
+              "_key": "k5f",
+              "style": "normal",
+              "listItem": "bullet",
+              "level": 1,
+              "markDefs": [],
+              "children": [
+                {
+                  "_type": "span",
+                  "_key": "k5c",
+                  "text": "Content is stored as Portable Text in the ",
+                  "marks": []
+                },
+                {
+                  "_type": "span",
+                  "_key": "k5d",
+                  "text": "ec_pages",
+                  "marks": [
+                    "code"
+                  ]
+                },
+                {
+                  "_type": "span",
+                  "_key": "k5e",
+                  "text": " table \u2014 the database is the source of truth.",
+                  "marks": []
+                }
+              ]
+            },
+            {
+              "_type": "block",
+              "_key": "k5n",
+              "style": "normal",
+              "listItem": "bullet",
+              "level": 1,
+              "markDefs": [],
+              "children": [
+                {
+                  "_type": "span",
+                  "_key": "k5g",
+                  "text": "The ",
+                  "marks": []
+                },
+                {
+                  "_type": "span",
+                  "_key": "k5h",
+                  "text": "/[...slug]",
+                  "marks": [
+                    "code"
+                  ]
+                },
+                {
+                  "_type": "span",
+                  "_key": "k5i",
+                  "text": " catch-all route looks up a published page by slug, preprocesses blocks (images, headings with TOC anchors, tables, and standard text blocks are all converted to ",
+                  "marks": []
+                },
+                {
+                  "_type": "span",
+                  "_key": "k5j",
+                  "text": "docs.html",
+                  "marks": [
+                    "code"
+                  ]
+                },
+                {
+                  "_type": "span",
+                  "_key": "k5k",
+                  "text": "), and renders via emdash's ",
+                  "marks": []
+                },
+                {
+                  "_type": "span",
+                  "_key": "k5l",
+                  "text": "PortableText",
+                  "marks": [
+                    "code"
+                  ]
+                },
+                {
+                  "_type": "span",
+                  "_key": "k5m",
+                  "text": " with Star-Lite's block components.",
+                  "marks": []
+                }
+              ]
+            },
+            {
+              "_type": "block",
+              "_key": "k5v",
+              "style": "normal",
+              "listItem": "bullet",
+              "level": 1,
+              "markDefs": [],
+              "children": [
+                {
+                  "_type": "span",
+                  "_key": "k5o",
+                  "text": "On first boot, the middleware runs ",
+                  "marks": []
+                },
+                {
+                  "_type": "span",
+                  "_key": "k5p",
+                  "text": "applySeed",
+                  "marks": [
+                    "code"
+                  ]
+                },
+                {
+                  "_type": "span",
+                  "_key": "k5q",
+                  "text": " to create the ",
+                  "marks": []
+                },
+                {
+                  "_type": "span",
+                  "_key": "k5r",
+                  "text": "pages",
+                  "marks": [
+                    "code"
+                  ]
+                },
+                {
+                  "_type": "span",
+                  "_key": "k5s",
+                  "text": " collection, ",
+                  "marks": []
+                },
+                {
+                  "_type": "span",
+                  "_key": "k5t",
+                  "text": "docs-sidebar",
+                  "marks": [
+                    "code"
+                  ]
+                },
+                {
+                  "_type": "span",
+                  "_key": "k5u",
+                  "text": " menu, and a welcome page. This is idempotent \u2014 existing data is never overwritten.",
+                  "marks": []
+                }
+              ]
+            },
+            {
+              "_type": "block",
+              "_key": "k61",
+              "style": "normal",
+              "listItem": "bullet",
+              "level": 1,
+              "markDefs": [],
+              "children": [
+                {
+                  "_type": "span",
+                  "_key": "k5w",
+                  "text": "The toolbar Save button is injected client-side via a ",
+                  "marks": []
+                },
+                {
+                  "_type": "span",
+                  "_key": "k5x",
+                  "text": "DOMContentLoaded",
+                  "marks": [
+                    "code"
+                  ]
+                },
+                {
+                  "_type": "span",
+                  "_key": "k5y",
+                  "text": " handler that watches the emdash toolbar's status area with a ",
+                  "marks": []
+                },
+                {
+                  "_type": "span",
+                  "_key": "k5z",
+                  "text": "MutationObserver",
+                  "marks": [
+                    "code"
+                  ]
+                },
+                {
+                  "_type": "span",
+                  "_key": "k60",
+                  "text": ".",
+                  "marks": []
+                }
+              ]
+            },
+            {
+              "_type": "block",
+              "_key": "k65",
+              "style": "normal",
+              "listItem": "bullet",
+              "level": 1,
+              "markDefs": [],
+              "children": [
+                {
+                  "_type": "span",
+                  "_key": "k62",
+                  "text": "A hidden ",
+                  "marks": []
+                },
+                {
+                  "_type": "span",
+                  "_key": "k63",
+                  "text": "<meta data-emdash-ref>",
+                  "marks": [
+                    "code"
+                  ]
+                },
+                {
+                  "_type": "span",
+                  "_key": "k64",
+                  "text": " element provides the toolbar with entry context (collection, id, status) without triggering click-to-admin redirects.",
+                  "marks": []
+                }
+              ]
+            },
+            {
+              "_type": "block",
+              "_key": "k67",
+              "style": "h2",
+              "markDefs": [],
+              "children": [
+                {
+                  "_type": "span",
+                  "_key": "k66",
+                  "text": "License",
+                  "marks": []
+                }
+              ]
+            },
+            {
+              "_type": "block",
+              "_key": "k69",
+              "style": "normal",
+              "markDefs": [],
+              "children": [
+                {
+                  "_type": "span",
+                  "_key": "k68",
+                  "text": "MIT",
+                  "marks": []
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  }
+}
