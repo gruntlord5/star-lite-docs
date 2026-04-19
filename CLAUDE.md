@@ -4,10 +4,9 @@
 
 ## Status
 
-- **Not published.** No npm release, no GitHub remote yet. Users install today via the local tarball (`bun add /path/to/star-lite-docs-0.1.0.tgz`) or a `file:` link.
-- **Single-commit history** — keep the history squashed into one initial commit; amend rather than add new commits while iterating.
-- **Tarball lives in repo root** — `star-lite-docs-0.1.0.tgz`. Regenerate with `rm -f *.tgz && bun pm pack`.
-- **Test bed** at `/tmp/my-docs/` (when present) — scaffolded from `starter/` with the `star-lite-docs` dep patched to point at the local tarball.
+- **Published** on [npm](https://www.npmjs.com/package/star-lite-docs) (`star-lite-docs@0.1.2`) and [GitHub](https://github.com/gruntlord5/star-lite-docs).
+- **`create-star-lite-docs`** CLI is published on npm (`0.2.0`). It clones the starter from GitHub at runtime (`git clone --depth 1`), so pushing to `main` is enough to update what users get — no npm republish needed for starter changes.
+- **Test bed** at `/tmp/my-docs/` (when present) — scaffolded via `bun create star-lite-docs`.
 
 ## Layout
 
@@ -17,13 +16,21 @@ star-lite-docs/
 ├── tsconfig.json
 ├── README.md             # public-facing install/usage docs
 ├── LICENSE               # MIT
-├── starter/              # giget-cloneable scaffold for new sites
-│   ├── package.json      # deps (inc. star-lite-docs from github:gruntlord5/...)
+├── starter/              # Node/Docker scaffold (cloned by create-star-lite-docs)
+│   ├── package.json      # deps (star-lite-docs from npm)
 │   ├── astro.config.mjs  # pre-wired with starLiteDocs() + starLiteBlocks()
+│   ├── Dockerfile
 │   ├── tsconfig.json
 │   ├── .gitignore
 │   ├── README.md
 │   └── src/pages/.gitkeep
+├── starter-cloudflare/   # Cloudflare Workers scaffold (D1 + R2)
+│   ├── package.json
+│   ├── astro.config.mjs  # starLiteDocs() + starLiteBlocks() + d1/r2 adapters
+│   ├── wrangler.jsonc
+│   ├── tsconfig.json
+│   ├── .gitignore
+│   └── README.md
 └── src/
     ├── index.ts          # public exports (TS-only — no .astro re-exports!)
     ├── integration.ts    # starLiteDocs() Astro integration
@@ -48,7 +55,8 @@ star-lite-docs/
     ├── routes/
     │   ├── page.astro       # catch-all /[...slug] — empty-state splash, markdown editor mode, /pages/X redirects
     │   ├── search.ts        # public search API
-    │   └── get-markdown.ts  # public PT→MD endpoint (powers Copy-MD)
+    │   ├── drop-fts.ts      # drops FTS indexes before save (prevents corruption)
+    │   └── get-markdown.ts  # public PT→MD endpoint (powers Copy-MD, published pages only)
     ├── blocks/
     │   ├── index.ts         # blockComponents map (emdash registers these)
     │   ├── entry.ts         # admin field schemas (emdash plugin entry)
@@ -127,21 +135,19 @@ The Edit-as-MD save POSTs to `/_emdash/api/content/pages/:id`. **emdash returns 
 ## Workflow
 
 ```bash
-# Edit code
-# Always commit-amend onto the single root commit
-git add -A && git commit --amend --no-edit -q
+# Edit code, then push
+git push
 
-# Re-pack the tarball
-rm -f *.tgz && bun pm pack
+# Starter changes take effect immediately (create-star-lite-docs clones from GitHub)
+# For npm package changes, bump version in package.json and:
+npm publish
 
-# In the test site:
+# Test locally:
+bun create star-lite-docs /tmp/my-docs
 cd /tmp/my-docs
-bun install --force          # picks up new tarball
 rm -rf dist data.db*         # fresh start if testing seed/migrations
-bun run build && bun run start
+bun run dev
 ```
-
-The starter's `package.json` references `"star-lite-docs": "github:gruntlord5/star-lite-docs"` — that link is dead until the repo is pushed. For the test bed we patch it to `file:/home/dylan/Documents/GitHub/star-lite-docs/star-lite-docs-0.1.0.tgz`.
 
 ## Known gotchas
 
@@ -151,6 +157,4 @@ The starter's `package.json` references `"star-lite-docs": "github:gruntlord5/st
 
 ## Next steps (TODO)
 
-- **Push to GitHub** — `gh repo create star-lite-docs --public --source=. --push`. Once pushed, the starter's `github:gruntlord5/...` dep becomes resolvable and `bunx giget github:gruntlord5/star-lite-docs/starter my-docs` works for everyone.
-- **Publish to npm** — one-way door. After publish, `npx astro add star-lite-docs` patches consumer configs automatically (we already have the default export and `astro-integration` keyword).
-- **Optional: `create-star-lite` package** — ~30-line CLI wrapping the giget call with a name prompt. Lets users `npm create star-lite@latest`.
+- None at this time — GitHub, npm, and `create-star-lite-docs` CLI are all live.

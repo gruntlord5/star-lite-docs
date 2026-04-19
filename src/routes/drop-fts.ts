@@ -1,5 +1,5 @@
 import type { APIRoute } from "astro";
-import { getDb } from "emdash/runtime";
+import { getDb } from "virtual:star-lite-docs/data";
 import { sql } from "kysely";
 
 export const prerender = false;

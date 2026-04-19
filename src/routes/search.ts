@@ -3,8 +3,7 @@
  * Queries ec_pages directly, no auth required.
  */
 import type { APIRoute } from "astro";
-import { getDb } from "emdash/runtime";
-import { ensurePagesCollection } from "../bootstrap";
+import { getDb, ensurePagesCollection } from "virtual:star-lite-docs/data";
 
 export const prerender = false;
 

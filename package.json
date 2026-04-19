@@ -1,6 +1,6 @@
 {
 	"name": "star-lite-docs",
-	"version": "0.1.2",
+	"version": "0.1.4",
 	"description": "Starlight-style documentation theme for EmDash CMS — Astro integration + emdash plugin in one package.",
 	"license": "MIT",
 	"author": "gruntlord5",
@@ -41,7 +41,8 @@
 		"emdash": ">=0.1.0 <1.0.0"
 	},
 	"dependencies": {
-		"astro-expressive-code": "^0.41.0"
+		"astro-expressive-code": "^0.41.0",
+		"star-lite-docs": "^0.1.3"
 	},
 	"devDependencies": {
 		"@types/node": "^20",

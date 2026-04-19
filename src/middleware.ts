@@ -5,8 +5,7 @@
  * to emdash's setup wizard and never hits the star-lite catch-all route.
  */
 import { defineMiddleware } from "astro:middleware";
-import { getDb } from "emdash/runtime";
-import { ensurePagesCollection } from "./bootstrap";
+import { getDb, ensurePagesCollection } from "virtual:star-lite-docs/data";
 
 export const onRequest = defineMiddleware(async (_ctx, next) => {
 	try {

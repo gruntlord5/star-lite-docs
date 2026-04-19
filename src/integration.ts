@@ -54,6 +54,8 @@ export interface StarLiteDocsOptions {
 
 const VIRTUAL_MODULE_ID = "virtual:star-lite-docs/config";
 const RESOLVED_VIRTUAL_MODULE_ID = "\0" + VIRTUAL_MODULE_ID;
+const VIRTUAL_DATA_ID = "virtual:star-lite-docs/data";
+const RESOLVED_VIRTUAL_DATA_ID = "\0" + VIRTUAL_DATA_ID;
 
 export function starLiteDocs(options: StarLiteDocsOptions = {}): AstroIntegration {
 	const siteTitle = options.title || "Documentation";
@@ -145,20 +147,129 @@ export function starLiteDocs(options: StarLiteDocsOptions = {}): AstroIntegratio
 				// Provide config via virtual module + make sure Astro's `.astro`
 				// plugin processes the files we ship (Vite SSR externalizes
 				// `node_modules` by default, which skips the .astro transform).
+				const cloudflare = config.adapter?.name === "@astrojs/cloudflare";
+
 				updateConfig({
 					vite: {
 						ssr: {
 							noExternal: ["star-lite-docs"],
 						},
 						plugins: [
+							// On Cloudflare, pre-bundle CJS deps that star-lite
+							// pulls in transitively via noExternal inline evaluation.
+							// expressive-code bundles parse-numeric-range which uses
+							// module.exports — crashes in workerd without pre-bundling.
+							...(cloudflare ? [{
+								name: "star-lite-docs-cf-deps",
+								configEnvironment(envName: string) {
+									if (!["astro", "ssr", "prerender"].includes(envName)) return;
+									return {
+										optimizeDeps: {
+											include: [
+												"astro-expressive-code",
+												"astro-expressive-code/components",
+												"rehype-expressive-code",
+												"rehype-expressive-code/hast",
+												"emdash/runtime",
+												"emdash",
+												"emdash/ui",
+												"emdash/client",
+											],
+											exclude: [
+												"virtual:emdash",
+												"virtual:star-lite-docs",
+												"virtual:astro-expressive-code",
+											],
+										},
+									};
+								},
+							}] : []),
 							{
 								name: "star-lite-docs-virtual",
 								resolveId(id: string) {
 									if (id === VIRTUAL_MODULE_ID) return RESOLVED_VIRTUAL_MODULE_ID;
+									if (id === VIRTUAL_DATA_ID) return RESOLVED_VIRTUAL_DATA_ID;
 								},
 								load(id: string) {
 									if (id === RESOLVED_VIRTUAL_MODULE_ID) {
 										return `export const sidebar = ${sidebarJson};\nexport const siteTitle = ${JSON.stringify(siteTitle)};`;
+									}
+									if (id === RESOLVED_VIRTUAL_DATA_ID) {
+										const seedPath = new URL("./seed.ts", import.meta.url).pathname;
+										return `
+import { getDb as _getDb } from "emdash/runtime";
+import { getSiteSettings as _getSiteSettings, getMenu as _getMenu, applySeed as _applySeed } from "emdash";
+import { defaultSeed } from "${seedPath}";
+
+export const getDb = _getDb;
+export const getSiteSettings = _getSiteSettings;
+
+let _ensured = false;
+let _ensuring = null;
+export async function ensurePagesCollection(db) {
+  if (_ensured) return;
+  if (_ensuring) return _ensuring;
+  _ensuring = (async () => {
+    try {
+      let seed = { ...defaultSeed };
+      try {
+        const { userSeed } = await import("virtual:emdash/seed");
+        if (userSeed) {
+          if (userSeed.content) seed.content = userSeed.content;
+          if (userSeed.menus) seed.menus = userSeed.menus;
+        }
+      } catch {}
+      const collectionSeed = { ...seed, menus: undefined };
+      const r = await _applySeed(db, collectionSeed, { includeContent: true });
+      let menusCreated = 0;
+      if (defaultSeed.menus) {
+        for (const menu of defaultSeed.menus) {
+          const existing = await db
+            .selectFrom("_emdash_menus").select("id")
+            .where("name", "=", menu.name).executeTakeFirst();
+          if (!existing) {
+            await _applySeed(db, { ...defaultSeed, collections: undefined, menus: [menu] });
+            menusCreated++;
+          }
+        }
+      }
+      const created = (r.collections?.created ?? 0) + (r.fields?.created ?? 0) + menusCreated;
+      if (created > 0) console.log("[star-lite-docs] applied default seed:", {
+        collections: r.collections?.created ?? 0, fields: r.fields?.created ?? 0, menus: menusCreated,
+      });
+      _ensured = true;
+    } catch (err) {
+      console.error("[star-lite-docs] bootstrap seed failed:", err);
+    } finally { _ensuring = null; }
+  })();
+  return _ensuring;
+}
+
+export async function loadSidebarFromMenu(name = "docs-sidebar") {
+  try {
+    const menu = await _getMenu(name);
+    if (!menu || !menu.items?.length) return [];
+    const groups = [];
+    const loose = [];
+    for (const item of menu.items) {
+      if (item.children && item.children.length > 0) {
+        groups.push({ label: item.label, items: item.children.map(function toEntry(c) {
+          return c.children?.length > 0
+            ? { label: c.label, items: c.children.map(toEntry) }
+            : { label: c.label, link: c.url };
+        })});
+      } else {
+        loose.push({ label: item.label, link: item.url });
+      }
+    }
+    if (loose.length > 0) groups.unshift({ label: menu.label || "Docs", items: loose });
+    return groups;
+  } catch (err) {
+    console.error("[star-lite-docs] failed to load sidebar menu:", err);
+    return [];
+  }
+}
+`;
 									}
 								},
 								transform(code: string, id: string) {

@@ -3,14 +3,11 @@
  * Catch-all docs page route — injected by the star-lite-docs integration.
  * Loads content from ec_pages and renders with the docs layout.
  */
-import { getDb } from "emdash/runtime";
-import { getSiteSettings } from "emdash";
+import { getDb, getSiteSettings, ensurePagesCollection, loadSidebarFromMenu } from "virtual:star-lite-docs/data";
 import { PortableText } from "emdash/ui";
 import { portableTextToMarkdown } from "emdash/client";
 import DocsLayout from "../DocsLayout.astro";
 import { preprocessBlocks, preprocessImages } from "../preprocess";
-import { ensurePagesCollection } from "../bootstrap";
-import { loadSidebarFromMenu } from "../menu-loader";
 import houston from "../assets/houston.webp";
 
 export const prerender = false;

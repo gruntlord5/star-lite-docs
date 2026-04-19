@@ -8,7 +8,7 @@
  * Public — no auth gate. Same visibility as the rendered page itself.
  */
 import type { APIRoute } from "astro";
-import { getDb } from "emdash/runtime";
+import { getDb } from "virtual:star-lite-docs/data";
 import { portableTextToMarkdown } from "emdash/client";
 
 export const prerender = false;
@@ -23,6 +23,7 @@ export const GET: APIRoute = async ({ url }) => {
 		.select(["content"])
 		.where("slug", "=", slug)
 		.where("deleted_at", "is", null)
+		.where("status", "=", "published")
 		.executeTakeFirst();
 
 	if (!row) return new Response("Page not found", { status: 404 });

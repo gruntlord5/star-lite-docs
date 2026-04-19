@@ -1,4 +1,8 @@
 ---
+import Icon from '../Icon.astro';
+import type { Icons } from '../Icons';
+import { blockMarkdownToHtml } from './inline-markdown';
+
 export interface Props {
   node: {
     id?: string;
@@ -14,23 +18,37 @@ interface CardItem {
   title: string;
   href?: string;
   description?: string;
+  icon?: string;
+  content?: string;
+  color?: string;
 }
 
 const cards: CardItem[] = cardsJson ? JSON.parse(cardsJson) : [];
 const isStagger = stagger === 'true';
+const hasContentCards = cards.some((c) => c.icon || c.content);
 ---
 
 <div class:list={['emdash-block-wrap', 'card-grid', { stagger: isStagger }]} data-block-type="star-lite.cardGrid" data-block-props={JSON.stringify(node)}>
-  {cards.map((card) => (
-    <div class="sl-link-card">
-      <span class="sl-flex stack">
-        <a href={card.href}>
-          <span class="title" set:html={card.title} />
-        </a>
-        {card.description && <span class="description" set:html={card.description} />}
-      </span>
-    </div>
-  ))}
+  {cards.map((card) =>
+    hasContentCards ? (
+      <article class="card sl-flex">
+        <p class="title sl-flex">
+          {card.icon && <Icon name={card.icon as keyof typeof Icons} class="icon" size="1.333em" />}
+          {card.title && <span set:html={card.title} />}
+        </p>
+        {card.content && <div class="body" set:html={blockMarkdownToHtml(card.content)} />}
+      </article>
+    ) : (
+      <div class="sl-link-card">
+        <span class="sl-flex stack">
+          <a href={card.href}>
+            <span class="link-title" set:html={card.title} />
+          </a>
+          {card.description && <span class="description" set:html={card.description} />}
+        </span>
+      </div>
+    )
+  )}
 </div>
 
 <style>
@@ -39,7 +57,7 @@ const isStagger = stagger === 'true';
     grid-template-columns: 100%;
     gap: 1rem;
   }
-  .card-grid > * {
+  .card-grid > :global(*) {
     margin-top: 0 !important;
   }
   @media (min-width: 50rem) {
@@ -51,9 +69,41 @@ const isStagger = stagger === 'true';
       --stagger-height: 5rem;
       padding-bottom: var(--stagger-height);
     }
-    .stagger > *:nth-child(2n) {
+    .stagger > :global(*):nth-child(2n) {
       transform: translateY(var(--stagger-height));
     }
+  }
+  .card {
+    --sl-card-border: var(--sl-color-purple);
+    --sl-card-bg: var(--sl-color-purple-low);
+    border: 1px solid var(--sl-color-gray-5);
+    background-color: var(--sl-color-black);
+    padding: clamp(1rem, calc(0.125rem + 3vw), 2.5rem);
+    flex-direction: column;
+    gap: clamp(0.5rem, calc(0.125rem + 1vw), 1rem);
+  }
+  .card:nth-child(4n + 1) { --sl-card-border: var(--sl-color-orange); --sl-card-bg: var(--sl-color-orange-low); }
+  .card:nth-child(4n + 3) { --sl-card-border: var(--sl-color-green); --sl-card-bg: var(--sl-color-green-low); }
+  .card:nth-child(4n + 4) { --sl-card-border: var(--sl-color-red); --sl-card-bg: var(--sl-color-red-low); }
+  .card:nth-child(4n + 5) { --sl-card-border: var(--sl-color-blue); --sl-card-bg: var(--sl-color-blue-low); }
+  .card .title {
+    font-weight: 600;
+    font-size: var(--sl-text-h4);
+    color: var(--sl-color-white);
+    line-height: var(--sl-line-height-headings);
+    gap: 1rem;
+    align-items: center;
+  }
+  .card :global(.icon) {
+    border: 1px solid var(--sl-card-border);
+    background-color: var(--sl-card-bg);
+    padding: 0.2em;
+    border-radius: 0.25rem;
+    flex-shrink: 0;
+  }
+  .card .body {
+    margin: 0;
+    font-size: clamp(var(--sl-text-sm), calc(0.5rem + 1vw), var(--sl-text-body));
   }
   .sl-link-card {
     display: grid;
@@ -82,7 +132,7 @@ const isStagger = stagger === 'true';
     flex-direction: column;
     gap: 0.5rem;
   }
-  .title {
+  .link-title {
     color: var(--sl-color-white);
     font-weight: 600;
     font-size: var(--sl-text-lg);
