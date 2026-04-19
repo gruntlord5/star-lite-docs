@@ -189,14 +189,6 @@ Astro components are available at subpath imports:
 import DocsLayout from "star-lite-docs/layout";
 ```
 
-## How It Works
-
-- Content is stored as Portable Text in the `ec_pages` table - the database is the source of truth.
-- The `/[...slug]` catch-all route looks up a published page by slug, preprocesses blocks (images, headings with TOC anchors, tables, and standard text blocks are all converted to `docs.html`), and renders via emdash's `PortableText` with Star-Lite's block components.
-- On first boot, the middleware runs `applySeed` to create the `pages` collection, `docs-sidebar` menu, and a welcome page. This is idempotent - existing data is never overwritten.
-- The toolbar Save button is injected client-side via a `DOMContentLoaded` handler that watches the emdash toolbar's status area with a `MutationObserver`.
-- Block components use `data-sl-edit` attributes for inline contenteditable editing and `data-block-props` for the block edit form.
-
 ## License
 
 MIT

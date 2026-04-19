@@ -3,16 +3,21 @@ export interface Props {
 	node: {
 		src?: string;
 		alt?: string;
+		href?: string;
 	};
 }
 
 const { node } = Astro.props;
-const { src, alt } = node;
+const { src, alt, href } = node;
 ---
 
 {src && (
 	<span class="emdash-block-wrap docs-image" data-block-type="docs.image" data-block-props={JSON.stringify(node)}>
-		<img src={src} alt={alt ?? ""} />
+		{href ? (
+			<a href={href}><img src={src} alt={alt ?? ""} /></a>
+		) : (
+			<img src={src} alt={alt ?? ""} />
+		)}
 	</span>
 )}
 

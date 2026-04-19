@@ -42,6 +42,26 @@ export function preprocessImages(ptBlocks: any[]): void {
 		if (b._type !== "block" || !b.children?.length) continue;
 		const text = b.children.map((c: any) => c.text || "").join("").trim();
 
+		// Case 0: Linked image [![alt](img)](link) — emdash parses as
+		// [{text:"![alt", marks:["linkKey"]}, {text:"](link-url)"}]
+		// where the link mark href is the REAL image src
+		if (b.children[0]?.text?.startsWith("![") && b.children[0].marks?.length && b.markDefs?.length) {
+			const firstChild = b.children[0];
+			const linkDef = b.markDefs.find((d: any) => d._type === "link" && firstChild.marks.includes(d._key));
+			if (linkDef?.href) {
+				const alt = firstChild.text.slice(2).trim();
+				const src = normalizeImageUrl(linkDef.href);
+				let href = "";
+				const nextChild = b.children[1];
+				if (nextChild?.text) {
+					const m = nextChild.text.match(/^\]\(([^)]+)\)$/);
+					if (m) href = m[1];
+				}
+				ptBlocks[i] = { _type: "docs.image", _key: `img-${i}`, src, alt, ...(href ? { href } : {}) };
+				continue;
+			}
+		}
+
 		// Case 1: raw markdown image syntax preserved as text
 		const imgMatch = text.match(/^!\[([^\]]*)\]\(([^)]+)\)$/);
 		if (imgMatch) {
@@ -139,6 +159,13 @@ function renderListGroup(blocks: any[]): string {
 	return html;
 }
 
+const HTML_BLOCK_TAG = /^<\/?(table|thead|tbody|tfoot|tr|th|td|div|section|article|aside|nav|header|footer|figure|figcaption|details|summary|dl|dt|dd)[\s>\/]/i;
+const CALLOUT_RE = /^\[!(NOTE|TIP|CAUTION|DANGER|WARNING|IMPORTANT)\]\s*/i;
+
+function isRawHtml(text: string): boolean {
+	return HTML_BLOCK_TAG.test(text.trim());
+}
+
 function isPlainParagraph(b: any): boolean {
 	if (b._type !== "block" || b.listItem) return false;
 	if (!b.children?.length) return false;
@@ -147,6 +174,8 @@ function isPlainParagraph(b: any): boolean {
 	const text = b.children.map((c: any) => c.text || "").join("");
 	if (text.trim() === "---") return false;
 	if (text.includes("|") && /\|\s*-+/.test(text)) return false;
+	if (isRawHtml(text)) return false;
+	if (CALLOUT_RE.test(text.trim())) return false;
 	return true;
 }
 
@@ -182,6 +211,34 @@ export function preprocessBlocks(ptBlocks: any[]): { blocks: any[]; headings: To
 		if (b._type !== "block" || !b.children?.length) { i++; continue; }
 		const text = b.children.map((c: any) => c.text || "").join("");
 
+		// GFM-style callouts: [!TIP], [!NOTE], etc. in blockquotes or normal blocks
+		{
+			const calloutMatch = text.match(CALLOUT_RE);
+			if (calloutMatch && (b.style === "blockquote" || b.style === "normal" || !b.style)) {
+				const asideType = calloutMatch[1].toLowerCase() === "warning" || calloutMatch[1].toLowerCase() === "important"
+					? "caution" : calloutMatch[1].toLowerCase() as "note" | "tip" | "caution" | "danger";
+				const firstLineContent = text.slice(calloutMatch[0].length).trim();
+				const contentParts: string[] = [];
+				if (firstLineContent) contentParts.push(firstLineContent);
+				let end = i + 1;
+				while (end < ptBlocks.length && ptBlocks[end]._type === "block" && ptBlocks[end].children?.length) {
+					const nextStyle = ptBlocks[end].style || "normal";
+					const nextText = (ptBlocks[end].children || []).map((c: any) => c.text || "").join("");
+					if (CALLOUT_RE.test(nextText.trim())) break;
+					if (nextStyle === "blockquote" || nextStyle === "normal") {
+						contentParts.push(nextText);
+						end++;
+					} else {
+						break;
+					}
+				}
+				const content = contentParts.join("\n\n");
+				ptBlocks.splice(i, end - i, { _type: "star-lite.aside", _key: `aside-${i}`, type: asideType, content });
+				i++;
+				continue;
+			}
+		}
+
 		// Headings: convert to HTML with id for TOC anchors
 		if (b.style?.startsWith("h")) {
 			const level = parseInt(b.style.slice(1), 10);
@@ -200,7 +257,7 @@ export function preprocessBlocks(ptBlocks: any[]): { blocks: any[]; headings: To
 			continue;
 		}
 
-		// Tables
+		// Tables — single block (all rows in one text) or multi-block (each row is a separate block)
 		if (text.includes("|") && /\|\s*-+/.test(text)) {
 			const allLines = text.split("\n");
 			const tableStart = allLines.findIndex((l: string) => l.trim().startsWith("|"));
@@ -226,6 +283,48 @@ export function preprocessBlocks(ptBlocks: any[]): { blocks: any[]; headings: To
 					continue;
 				}
 			}
+		}
+		// Multi-block table: header row in this block, separator in next block
+		if (text.trim().startsWith("|") && text.trim().endsWith("|")) {
+			const nextB = ptBlocks[i + 1];
+			if (nextB?._type === "block" && nextB.children?.length) {
+				const nextText = nextB.children.map((c: any) => c.text || "").join("").trim();
+				if (nextText.match(/^\|[\s-:|]+\|$/)) {
+					const tableLines: string[] = [text.trim(), nextText];
+					let end = i + 2;
+					while (end < ptBlocks.length && ptBlocks[end]._type === "block" && ptBlocks[end].children?.length) {
+						const rowText = ptBlocks[end].children.map((c: any) => c.text || "").join("").trim();
+						if (!rowText.startsWith("|") || !rowText.endsWith("|")) break;
+						tableLines.push(rowText);
+						end++;
+					}
+					const parseRow = (line: string) => line.split("|").slice(1, -1).map((c: string) => c.trim());
+					const headers = parseRow(tableLines[0]);
+					const rows = tableLines.slice(2).map(parseRow);
+					let html = '<table><thead><tr>' + headers.map((h: string) => `<th>${h}</th>`).join("") + '</tr></thead><tbody>';
+					for (const row of rows) {
+						html += '<tr>' + row.map((c: string) => `<td>${c}</td>`).join("") + '</tr>';
+					}
+					html += '</tbody></table>';
+					ptBlocks.splice(i, end - i, { _type: "docs.html", _key: `table-${i}`, html, _label: "Table" });
+					i++;
+					continue;
+				}
+			}
+		}
+
+		// Raw HTML blocks — pass through unescaped
+		if (isRawHtml(text)) {
+			let end = i + 1;
+			while (end < ptBlocks.length && ptBlocks[end]._type === "block" && ptBlocks[end].children?.length) {
+				const nextText = ptBlocks[end].children.map((c: any) => c.text || "").join("");
+				if (!isRawHtml(nextText)) break;
+				end++;
+			}
+			const rawHtml = ptBlocks.slice(i, end).map((bl: any) => bl.children.map((c: any) => c.text || "").join("")).join("\n");
+			ptBlocks.splice(i, end - i, { _type: "docs.html", _key: `html-${i}`, html: rawHtml, _label: "HTML" });
+			i++;
+			continue;
 		}
 
 		// Group consecutive plain paragraphs into a single block
