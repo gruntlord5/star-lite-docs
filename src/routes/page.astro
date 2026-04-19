@@ -239,16 +239,38 @@ const isSplash = ptBlocks.some((b: any) => b?._type === "docs.hero");
 
 				var props = JSON.parse(wrap.dataset.blockProps || '{}');
 				var blockType = wrap.dataset.blockType || '';
-				var skipKeys = { _type: 1, _key: 1 };
+				var skipKeys = { _type: 1, _key: 1, _label: 1, html: 1, items: 1 };
 				var form = document.createElement('div');
 				form.className = 'emdash-block-edit-form';
 
 				var heading = document.createElement('div');
 				heading.style.cssText = 'font-weight:600;font-size:13px;margin-bottom:8px;';
-				heading.textContent = 'Edit ' + blockType.replace(/^[^.]+\./, '');
+				heading.textContent = 'Edit ' + (props._label || blockType.replace(/^[^.]+\./, ''));
 				form.appendChild(heading);
 
 				var inputs = {};
+				var listInputs = null;
+
+				// List items: render each as its own input
+				if (props._label === 'List' && Array.isArray(props.items)) {
+					listInputs = [];
+					props.items.forEach(function(item, idx) {
+						var row = document.createElement('div');
+						row.style.cssText = 'display:flex;align-items:center;gap:4px;margin-bottom:4px;';
+						var indent = document.createElement('span');
+						indent.style.cssText = 'flex:0 0 auto;font-size:12px;color:#64748b;user-select:none;';
+						indent.textContent = '\u00A0\u00A0'.repeat((item.level || 1) - 1) + (item.type === 'number' ? (idx + 1) + '.' : '\u2022');
+						row.appendChild(indent);
+						var inp = document.createElement('input');
+						inp.type = 'text';
+						inp.value = item.text || '';
+						inp.style.cssText = 'flex:1;padding:4px 8px;font-size:12px;border:1px solid #cbd5e1;border-radius:4px;background:transparent;font-family:inherit;';
+						row.appendChild(inp);
+						form.appendChild(row);
+						listInputs.push({ input: inp, level: item.level || 1, type: item.type || 'bullet' });
+					});
+				}
+
 				for (var key in props) {
 					if (skipKeys[key]) continue;
 					var val = props[key];
@@ -261,9 +283,10 @@ const isSplash = ptBlocks.some((b: any) => b?._type === "docs.hero");
 
 					var strVal = typeof val === 'string' ? val : JSON.stringify(val);
 					var input;
-					if (strVal.length > 80) {
+					var lineCount = (strVal.match(/\n/g) || []).length + 1;
+					if (strVal.length > 80 || lineCount > 1) {
 						input = document.createElement('textarea');
-						input.rows = 2;
+						input.rows = Math.max(3, Math.min(lineCount + 1, 12));
 					} else {
 						input = document.createElement('input');
 						input.type = typeof val === 'boolean' ? 'checkbox' : typeof val === 'number' ? 'number' : 'text';
@@ -300,7 +323,39 @@ const isSplash = ptBlocks.some((b: any) => b?._type === "docs.hero");
 						else if (typeof orig === 'number') newProps[k] = Number(inp.value) || 0;
 						else newProps[k] = inp.value;
 					}
+					// Reconstruct html from text fields
+					function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+					if (newProps._label === 'Heading' && newProps.text != null) {
+						var lvl = newProps.level || 2;
+						var slug = newProps.text.toLowerCase().replace(/[^\w]+/g, '-').replace(/(^-|-$)/g, '');
+						newProps.html = '<h' + lvl + ' id="' + slug + '">' + esc(newProps.text) + '</h' + lvl + '>';
+					} else if (newProps._label === 'List' && listInputs) {
+						newProps.items = listInputs.map(function(li) {
+							return { text: li.input.value, level: li.level, type: li.type };
+						});
+						// Rebuild list HTML
+						var lhtml = '', curLvl = 0, tagStack = [];
+						newProps.items.forEach(function(it) {
+							var tag = it.type === 'number' ? 'ol' : 'ul';
+							if (it.level > curLvl) {
+								for (var l = curLvl; l < it.level; l++) { lhtml += '<' + tag + '>'; tagStack.push(tag); }
+							} else if (it.level < curLvl) {
+								for (var l = curLvl; l > it.level; l--) { lhtml += '</li></' + tagStack.pop() + '>'; }
+								lhtml += '</li>';
+							} else if (curLvl > 0) { lhtml += '</li>'; }
+							lhtml += '<li>' + esc(it.text);
+							curLvl = it.level;
+						});
+						for (var l = curLvl; l > 0; l--) { lhtml += '</li></' + tagStack.pop() + '>'; }
+						newProps.html = lhtml;
+					} else if (newProps._label === 'Paragraph' && newProps.text != null) {
+						newProps.html = newProps.text.split('\n\n').map(function(p) { return '<p>' + esc(p) + '</p>'; }).join('\n');
+					} else if (newProps._label === 'Blockquote' && newProps.text != null) {
+						newProps.html = '<blockquote><p>' + esc(newProps.text) + '</p></blockquote>';
+					}
 					wrap.dataset.blockProps = JSON.stringify(newProps);
+					wrap.querySelectorAll('.emdash-block-edit, .emdash-block-edit-form').forEach(function(n) { n.remove(); });
+					if (newProps.html) wrap.innerHTML = newProps.html;
 					form.remove();
 					document.dispatchEvent(new CustomEvent("emdash:save", { detail: { state: "unsaved" } }));
 				});

@@ -12,14 +12,15 @@
  *   })
  */
 
+import { fileURLToPath } from "node:url";
 import type { PluginDescriptor } from "emdash";
 
 export function starLiteBlocks(): PluginDescriptor {
 	return {
 		id: "star-lite-blocks",
 		version: "1.0.0",
-		entrypoint: new URL("./blocks/entry.ts", import.meta.url).pathname,
-		componentsEntry: new URL("./blocks/index.ts", import.meta.url).pathname,
+		entrypoint: fileURLToPath(new URL("./blocks/entry.ts", import.meta.url)),
+		componentsEntry: fileURLToPath(new URL("./blocks/index.ts", import.meta.url)),
 		options: {},
 	};
 }

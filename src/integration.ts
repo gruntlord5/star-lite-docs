@@ -109,28 +109,28 @@ export function starLiteDocs(options: StarLiteDocsOptions = {}): AstroIntegratio
 				// Inject catch-all page route
 				injectRoute({
 					pattern: "/[...slug]",
-					entrypoint: new URL("./routes/page.astro", import.meta.url).pathname,
+					entrypoint: fileURLToPath(new URL("./routes/page.astro", import.meta.url)),
 					prerender: false,
 				});
 
 				// Inject search API route
 				injectRoute({
 					pattern: "/api/search",
-					entrypoint: new URL("./routes/search.ts", import.meta.url).pathname,
+					entrypoint: fileURLToPath(new URL("./routes/search.ts", import.meta.url)),
 					prerender: false,
 				});
 
 				// Inject FTS disable route (called before save to prevent corruption)
 				injectRoute({
 					pattern: "/api/drop-fts",
-					entrypoint: new URL("./routes/drop-fts.ts", import.meta.url).pathname,
+					entrypoint: fileURLToPath(new URL("./routes/drop-fts.ts", import.meta.url)),
 					prerender: false,
 				});
 
 				// Inject markdown-export API route (powers Copy-MD button)
 				injectRoute({
 					pattern: "/api/get-markdown",
-					entrypoint: new URL("./routes/get-markdown.ts", import.meta.url).pathname,
+					entrypoint: fileURLToPath(new URL("./routes/get-markdown.ts", import.meta.url)),
 					prerender: false,
 				});
 
@@ -140,7 +140,7 @@ export function starLiteDocs(options: StarLiteDocsOptions = {}): AstroIntegratio
 				// `order: "pre"` so it runs BEFORE emdash's auth middleware,
 				// which short-circuits pre-setup requests with a redirect.
 				addMiddleware({
-					entrypoint: new URL("./middleware.ts", import.meta.url).pathname,
+					entrypoint: fileURLToPath(new URL("./middleware.ts", import.meta.url)),
 					order: "pre",
 				});
 
@@ -195,7 +195,7 @@ export function starLiteDocs(options: StarLiteDocsOptions = {}): AstroIntegratio
 										return `export const sidebar = ${sidebarJson};\nexport const siteTitle = ${JSON.stringify(siteTitle)};`;
 									}
 									if (id === RESOLVED_VIRTUAL_DATA_ID) {
-										const seedPath = new URL("./seed.ts", import.meta.url).pathname;
+										const seedPath = fileURLToPath(new URL("./seed.ts", import.meta.url));
 										return `
 import { getDb as _getDb } from "emdash/runtime";
 import { getSiteSettings as _getSiteSettings, getMenu as _getMenu, applySeed as _applySeed } from "emdash";
@@ -274,7 +274,7 @@ export async function loadSidebarFromMenu(name = "docs-sidebar") {
 								},
 								transform(code: string, id: string) {
 									if (!id.includes("emdash/block-components")) return;
-									const componentsEntry = new URL("./blocks/index.ts", import.meta.url).pathname;
+									const componentsEntry = fileURLToPath(new URL("./blocks/index.ts", import.meta.url));
 									return code + `\nimport { blockComponents as _slBlocks } from "${componentsEntry}";\nObject.assign(pluginBlockComponents, _slBlocks);`;
 								},
 							},
