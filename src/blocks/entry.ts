@@ -141,6 +141,16 @@ export function createPlugin() {
 						{ type: "text_input", action_id: "stepsJson", label: "Steps (JSON: [{content}])" },
 					],
 				},
+				{
+					type: "docs.diagram",
+					label: "Diagram (draw.io)",
+					icon: "link",
+					description: "Editable draw.io diagram stored as SVG",
+					fields: [
+						{ type: "text_input", action_id: "svg", label: "SVG content" },
+						{ type: "text_input", action_id: "xml", label: "draw.io XML source" },
+					],
+				},
 			],
 		},
 	});

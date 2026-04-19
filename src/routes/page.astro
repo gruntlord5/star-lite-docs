@@ -99,7 +99,21 @@ const isMarkdownEditor =
 	isEditing &&
 	Astro.url.searchParams.get("editor") === "markdown";
 
-const markdownSource = isMarkdownEditor ? portableTextToMarkdown(ptBlocks) : "";
+function toMarkdownFriendly(blocks: any[]): any[] {
+	return blocks.map((b: any) => {
+		if (b._type === "docs.image") {
+			return { _type: "block", _key: b._key, style: "normal", markDefs: [],
+				children: [{ _type: "span", text: `![${b.alt || ""}](${b.src || ""})`, marks: [] }] };
+		}
+		if (b._type === "docs.diagram") {
+			const inner = b.svg ? `\n${b.svg}\n` : "";
+			return { _type: "block", _key: b._key, style: "normal", markDefs: [],
+				children: [{ _type: "span", text: `<!--drawio${b.xml ? ` xml="${Buffer.from(b.xml).toString("base64")}"` : ""}-->${inner}<!--/drawio-->`, marks: [] }] };
+		}
+		return b;
+	});
+}
+const markdownSource = isMarkdownEditor ? portableTextToMarkdown(toMarkdownFriendly(ptBlocks)) : "";
 
 // Always preprocess — star-lite doesn't use emdash's inline TipTap editor,
 // so we never attach __emdash edit metadata to ptBlocks.
@@ -123,6 +137,7 @@ const isSplash = ptBlocks.some((b: any) => b?._type === "docs.hero");
 				<div class="sl-md-toolbar">
 					<strong>Editing as Markdown</strong>
 					<span class="sl-md-status" id="sl-md-status" />
+					<button type="button" id="sl-md-insert-diagram" class="sl-link-button secondary">+ Diagram</button>
 					<a class="sl-link-button secondary" href={Astro.url.pathname}>Cancel</a>
 					<button type="button" id="sl-md-save" class="sl-link-button primary">Save</button>
 				</div>
@@ -195,6 +210,35 @@ const isSplash = ptBlocks.some((b: any) => b?._type === "docs.hero");
 			.dark .emdash-block-edit-form {
 				background: #1e293b;
 				border-color: #334155;
+			}
+			.sl-drawio-overlay {
+				position: fixed;
+				inset: 0;
+				z-index: 9999;
+				background: rgba(0,0,0,0.5);
+				display: flex;
+				align-items: center;
+				justify-content: center;
+			}
+			.sl-drawio-overlay iframe {
+				width: 90vw;
+				height: 90vh;
+				border: none;
+				border-radius: 8px;
+			}
+			.sl-insert-diagram {
+				display: inline-flex;
+				align-items: center;
+				gap: 0.4em;
+				margin: 0.5rem 0;
+				padding: 6px 14px;
+				font-size: 13px;
+				font-weight: 600;
+				background: var(--sl-color-text-accent, #3b82f6);
+				color: var(--sl-color-black, #fff);
+				border: none;
+				border-radius: 4px;
+				cursor: pointer;
 			}
 		</style>
 		<script define:vars={{ blockEditPageId: String(row!.id) }}>
@@ -367,8 +411,95 @@ const isSplash = ptBlocks.some((b: any) => b?._type === "docs.hero");
 				if (!btn) return;
 				e.preventDefault();
 				e.stopPropagation();
+				var wrap = btn.closest('.emdash-block-wrap');
+				if (wrap && wrap.dataset.blockType === 'docs.diagram') {
+					var p = {};
+					try { p = JSON.parse(wrap.dataset.blockProps || '{}'); } catch(ex) {}
+					openDrawio(p.xml || '', function(svg, xml) {
+						var np = Object.assign({}, p, { svg: svg, xml: xml, _type: 'docs.diagram' });
+						wrap.dataset.blockProps = JSON.stringify(np);
+						wrap.innerHTML = svg;
+						document.dispatchEvent(new CustomEvent('emdash:save', { detail: { state: 'unsaved' } }));
+					});
+					return;
+				}
 				openBlockEditForm(btn);
 			}, true);
+
+			function decodeSvgExport(data) {
+				if (data && data.startsWith('data:image/svg+xml;base64,')) {
+					try { return atob(data.slice('data:image/svg+xml;base64,'.length)); } catch(e) {}
+				}
+				return data || '';
+			}
+
+			// draw.io embed editor
+			function openDrawio(existingXml, onSave) {
+				var overlay = document.createElement('div');
+				overlay.className = 'sl-drawio-overlay';
+				var iframe = document.createElement('iframe');
+				iframe.src = 'https://embed.diagrams.net/?embed=1&spin=1&proto=json&configure=1';
+				overlay.appendChild(iframe);
+				document.body.appendChild(overlay);
+
+				overlay.addEventListener('click', function(e) {
+					if (e.target === overlay) { overlay.remove(); }
+				});
+
+				window.addEventListener('message', function handler(e) {
+					if (e.source !== iframe.contentWindow) return;
+					var msg;
+					try { msg = JSON.parse(e.data); } catch(ex) { return; }
+
+					if (msg.event === 'configure') {
+						iframe.contentWindow.postMessage(JSON.stringify({
+							action: 'configure',
+							config: { css: '', defaultFonts: [] }
+						}), '*');
+					} else if (msg.event === 'init') {
+						iframe.contentWindow.postMessage(JSON.stringify({
+							action: 'load',
+							xml: existingXml || '',
+							autosave: 0
+						}), '*');
+					} else if (msg.event === 'save') {
+						iframe.contentWindow.postMessage(JSON.stringify({
+							action: 'export',
+							format: 'svg',
+							spinKey: 'export'
+						}), '*');
+					} else if (msg.event === 'export') {
+						window.removeEventListener('message', handler);
+						overlay.remove();
+						onSave(decodeSvgExport(msg.data), msg.xml || existingXml);
+					} else if (msg.event === 'exit') {
+						window.removeEventListener('message', handler);
+						overlay.remove();
+					}
+				});
+			}
+
+			// "Insert Diagram" button
+			var content = document.querySelector('.sl-markdown-content');
+			if (content) {
+				var insertBtn = document.createElement('button');
+				insertBtn.type = 'button';
+				insertBtn.className = 'sl-insert-diagram';
+				insertBtn.textContent = '+ Insert Diagram';
+				insertBtn.addEventListener('click', function() {
+					openDrawio('', function(svg, xml) {
+						var block = { _type: 'docs.diagram', _key: 'diagram-' + Date.now(), svg: svg, xml: xml };
+						var wrap = document.createElement('div');
+						wrap.className = 'emdash-block-wrap docs-diagram';
+						wrap.dataset.blockType = 'docs.diagram';
+						wrap.dataset.blockProps = JSON.stringify(block);
+						wrap.innerHTML = svg;
+						content.appendChild(wrap);
+						document.dispatchEvent(new CustomEvent('emdash:save', { detail: { state: 'unsaved' } }));
+					});
+				});
+				content.parentNode.insertBefore(insertBtn, content.nextSibling);
+			}
 
 			// Toolbar is injected before </body> by emdash middleware, so it
 			// doesn't exist yet when this script runs. Defer until DOMContentLoaded.
@@ -397,6 +528,38 @@ const isSplash = ptBlocks.some((b: any) => b?._type === "docs.hero");
 					}
 				}).observe(statusEl, { childList: true, subtree: true });
 
+				function docsHtmlToPt(block) {
+					if (block._type !== 'docs.html') return [block];
+					var label = block._label;
+					function span(t) { return [{ _type: 'span', text: t || '', marks: [] }]; }
+					if (label === 'Heading') {
+						return [{ _type: 'block', _key: block._key, style: 'h' + (block.level || 2),
+							children: span(block.text), markDefs: [] }];
+					}
+					if (label === 'Paragraph') {
+						return (block.text || '').split('\n\n').map(function(p, idx) {
+							return { _type: 'block', _key: block._key + (idx > 0 ? '-' + idx : ''),
+								style: 'normal', children: span(p), markDefs: [] };
+						});
+					}
+					if (label === 'Blockquote') {
+						return [{ _type: 'block', _key: block._key, style: 'blockquote',
+							children: span(block.text), markDefs: [] }];
+					}
+					if (label === 'List' && Array.isArray(block.items)) {
+						return block.items.map(function(item, idx) {
+							return { _type: 'block', _key: block._key + '-' + idx, style: 'normal',
+								listItem: item.type === 'number' ? 'number' : 'bullet',
+								level: item.level || 1, children: span(item.text), markDefs: [] };
+						});
+					}
+					if (label === 'Divider') {
+						return [{ _type: 'block', _key: block._key, style: 'normal',
+							children: span('---'), markDefs: [] }];
+					}
+					return [block];
+				}
+
 				function doSave() {
 					needsSave = false;
 					statusEl.innerHTML = '<span class="emdash-tb-badge emdash-tb-badge--saving">Saving\u2026</span>';
@@ -406,7 +569,8 @@ const isSplash = ptBlocks.some((b: any) => b?._type === "docs.hero");
 						try {
 							var p = JSON.parse(w.dataset.blockProps);
 							p._type = w.dataset.blockType;
-							allBlocks.push(p);
+							var ptBlocks = docsHtmlToPt(p);
+							for (var bi = 0; bi < ptBlocks.length; bi++) allBlocks.push(ptBlocks[bi]);
 						} catch(e) {}
 					});
 
@@ -507,6 +671,21 @@ const isSplash = ptBlocks.some((b: any) => b?._type === "docs.hero");
 				font-size: var(--sl-text-xs, 0.75rem);
 				color: var(--sl-color-gray-3, #9ca3af);
 			}
+			.sl-drawio-overlay {
+				position: fixed;
+				inset: 0;
+				z-index: 9999;
+				background: rgba(0,0,0,0.5);
+				display: flex;
+				align-items: center;
+				justify-content: center;
+			}
+			.sl-drawio-overlay iframe {
+				width: 90vw;
+				height: 90vh;
+				border: none;
+				border-radius: 8px;
+			}
 		</style>
 		<script>
 			import { markdownToPortableText } from "emdash/client";
@@ -523,13 +702,105 @@ const isSplash = ptBlocks.some((b: any) => b?._type === "docs.hero");
 				else delete status.dataset.state;
 			}
 
+			const diagramBtn = document.getElementById("sl-md-insert-diagram") as HTMLButtonElement | null;
+			diagramBtn?.addEventListener("click", () => {
+				if (!textarea) return;
+				const overlay = document.createElement("div");
+				overlay.className = "sl-drawio-overlay";
+				const iframe = document.createElement("iframe");
+				iframe.src = "https://embed.diagrams.net/?embed=1&spin=1&proto=json&configure=1";
+				overlay.appendChild(iframe);
+				document.body.appendChild(overlay);
+
+				overlay.addEventListener("click", (e) => {
+					if (e.target === overlay) overlay.remove();
+				});
+
+				function handler(e: MessageEvent) {
+					if (e.source !== iframe.contentWindow) return;
+					let msg: any;
+					try { msg = JSON.parse(e.data); } catch { return; }
+
+					if (msg.event === "configure") {
+						iframe.contentWindow!.postMessage(JSON.stringify({
+							action: "configure", config: { css: "", defaultFonts: [] }
+						}), "*");
+					} else if (msg.event === "init") {
+						iframe.contentWindow!.postMessage(JSON.stringify({
+							action: "load", xml: "", autosave: 0
+						}), "*");
+					} else if (msg.event === "save") {
+						iframe.contentWindow!.postMessage(JSON.stringify({
+							action: "export", format: "svg", spinKey: "export"
+						}), "*");
+					} else if (msg.event === "export") {
+						window.removeEventListener("message", handler);
+						overlay.remove();
+						const xmlAttr = msg.xml ? ` xml="${btoa(msg.xml)}"` : "";
+						let svgData = msg.data || "";
+						if (svgData.startsWith("data:image/svg+xml;base64,")) {
+							try { svgData = atob(svgData.slice("data:image/svg+xml;base64,".length)); } catch {}
+						}
+						const tag = `\n<!--drawio${xmlAttr}-->\n${svgData}\n<!--/drawio-->\n`;
+						const pos = textarea.selectionStart;
+						textarea.value = textarea.value.slice(0, pos) + tag + textarea.value.slice(pos);
+						textarea.focus();
+					} else if (msg.event === "exit") {
+						window.removeEventListener("message", handler);
+						overlay.remove();
+					}
+				}
+				window.addEventListener("message", handler);
+			});
+
+			function postProcessBlocks(blocks: any[]): any[] {
+				const result: any[] = [];
+				for (let i = 0; i < blocks.length; i++) {
+					const b = blocks[i];
+					if (b._type !== "block" || !b.children?.length) { result.push(b); continue; }
+					const text = b.children.map((c: any) => c.text || "").join("").trim();
+					// Inline: <!--drawio ...-->CONTENT<!--/drawio--> all in one block
+					const inlineMatch = text.match(/^<!--drawio(?:\s+xml="([^"]*)")?-->([\s\S]*?)<!--\/drawio-->$/);
+					if (inlineMatch) {
+						let xml = "";
+						try { if (inlineMatch[1]) xml = atob(inlineMatch[1]); } catch {}
+						const svg = (inlineMatch[2] || "").trim();
+						result.push({ _type: "docs.diagram", _key: b._key || "diagram-" + i, svg, xml });
+						continue;
+					}
+					// Multi-block: <!--drawio ...--> on its own line
+					const drawioOpen = text.match(/^<!--drawio(?:\s+xml="([^"]*)")?-->$/);
+					if (drawioOpen) {
+						const xmlB64 = drawioOpen[1] || "";
+						let j = i + 1;
+						const svgParts: string[] = [];
+						while (j < blocks.length) {
+							const nb = blocks[j];
+							if (nb._type === "block" && nb.children?.length) {
+								const nt = nb.children.map((c: any) => c.text || "").join("").trim();
+								if (nt === "<!--/drawio-->") { j++; break; }
+								svgParts.push(nt);
+							}
+							j++;
+						}
+						let xml = "";
+						try { if (xmlB64) xml = atob(xmlB64); } catch {}
+						result.push({ _type: "docs.diagram", _key: b._key || "diagram-" + i, svg: svgParts.join("\n"), xml });
+						i = j - 1;
+						continue;
+					}
+					result.push(b);
+				}
+				return result;
+			}
+
 			saveBtn?.addEventListener("click", async () => {
 				const pageId = editor?.dataset.pageId;
 				if (!pageId || !textarea) return;
 				saveBtn.disabled = true;
 				setStatus("Saving…", "saving");
 				try {
-					const blocks = markdownToPortableText(textarea.value);
+					const blocks = postProcessBlocks(markdownToPortableText(textarea.value));
 					await fetch("/api/drop-fts", { method: "POST", credentials: "same-origin" });
 					const res = await fetch(`/_emdash/api/content/pages/${encodeURIComponent(pageId)}`, {
 						method: "PUT",

@@ -1,0 +1,51 @@
+---
+export interface Props {
+	node: {
+		svg?: string;
+		xml?: string;
+	};
+}
+
+const { node } = Astro.props;
+let svg = node.svg || "";
+if (svg.startsWith("data:image/svg+xml;base64,")) {
+	svg = Buffer.from(svg.slice("data:image/svg+xml;base64,".length), "base64").toString("utf-8");
+}
+const hasContent = svg.includes("<svg");
+---
+
+{hasContent ? (
+	<div
+		class="emdash-block-wrap docs-diagram"
+		data-block-type="docs.diagram"
+		data-block-props={JSON.stringify(node)}
+		set:html={svg}
+	/>
+) : (
+	<div
+		class="emdash-block-wrap docs-diagram docs-diagram--empty"
+		data-block-type="docs.diagram"
+		data-block-props={JSON.stringify(node)}
+	>
+		<p>Diagram — click Edit to open draw.io</p>
+	</div>
+)}
+
+<style>
+	.docs-diagram {
+		display: block;
+		margin: 1.5rem 0;
+		text-align: center;
+	}
+	.docs-diagram :global(svg) {
+		max-width: 100%;
+		height: auto;
+	}
+	.docs-diagram--empty {
+		border: 2px dashed var(--sl-color-gray-4, #94a3b8);
+		border-radius: 8px;
+		padding: 2rem;
+		color: var(--sl-color-gray-3, #9ca3af);
+		font-style: italic;
+	}
+</style>

@@ -11,6 +11,7 @@ import DocsSteps from "./DocsSteps.astro";
 import DocsHtml from "./DocsHtml.astro";
 import DocsHero from "./DocsHero.astro";
 import DocsImage from "./DocsImage.astro";
+import DocsDiagram from "./DocsDiagram.astro";
 import CodeBlock from "../CodeBlock.astro";
 
 /** Generic doc block components — Starlight equivalents */
@@ -18,6 +19,7 @@ export const blockComponents = {
 	"docs.html": DocsHtml,
 	"docs.hero": DocsHero,
 	"docs.image": DocsImage,
+	"docs.diagram": DocsDiagram,
 	"code": CodeBlock,
 	"star-lite.tabs": DocsTabs,
 	"star-lite.linkCard": DocsLinkCard,

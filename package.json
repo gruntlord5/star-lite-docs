@@ -1,6 +1,6 @@
 {
 	"name": "star-lite-docs",
-	"version": "0.1.5",
+	"version": "0.1.6",
 	"description": "Starlight-style documentation theme for EmDash CMS — Astro integration + emdash plugin in one package.",
 	"license": "MIT",
 	"author": "gruntlord5",
