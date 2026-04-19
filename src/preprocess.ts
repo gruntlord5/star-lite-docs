@@ -171,6 +171,8 @@ export function preprocessBlocks(ptBlocks: any[]): { blocks: any[]; headings: To
 				text: (lb.children || []).map((c: any) => c.text || "").join(""),
 				level: lb.level || 1,
 				type: lb.listItem === "number" ? "number" : "bullet",
+				_children: lb.children,
+				_markDefs: lb.markDefs || [],
 			}));
 			ptBlocks.splice(i, end - i, { _type: "docs.html", _key: `list-${i}`, html, _label: "List", items });
 			i++;
@@ -186,7 +188,7 @@ export function preprocessBlocks(ptBlocks: any[]): { blocks: any[]; headings: To
 			const id = text.toLowerCase().replace(/[^\w]+/g, "-").replace(/(^-|-$)/g, "");
 			headings.push({ depth: level, slug: id, text });
 			const html = `<h${level} id="${id}">${(b.children || []).map((c: any) => renderSpan(c, b.markDefs)).join("")}</h${level}>`;
-			ptBlocks[i] = { _type: "docs.html", _key: `heading-${i}`, html, _label: "Heading", text, level };
+			ptBlocks[i] = { _type: "docs.html", _key: `heading-${i}`, html, _label: "Heading", text, level, _children: b.children, _markDefs: b.markDefs || [] };
 			i++;
 			continue;
 		}
@@ -236,7 +238,8 @@ export function preprocessBlocks(ptBlocks: any[]): { blocks: any[]; headings: To
 				const grouped = ptBlocks.slice(i, end);
 				const html = grouped.map((bl: any) => blockToHtml(bl)).join("\n");
 				const groupedText = grouped.map((bl: any) => (bl.children || []).map((c: any) => c.text || "").join("")).join("\n\n");
-				ptBlocks.splice(i, end - i, { _type: "docs.html", _key: `block-${i}`, html, _label: "Paragraph", text: groupedText });
+				const _source = grouped.map((bl: any) => ({ children: bl.children, markDefs: bl.markDefs || [], style: bl.style || "normal" }));
+				ptBlocks.splice(i, end - i, { _type: "docs.html", _key: `block-${i}`, html, _label: "Paragraph", text: groupedText, _source });
 				i++;
 				continue;
 			}
@@ -244,7 +247,7 @@ export function preprocessBlocks(ptBlocks: any[]): { blocks: any[]; headings: To
 
 		// All remaining standard blocks → docs.html so they get the block editing UI
 		const label = b.style === "blockquote" ? "Blockquote" : "Paragraph";
-		ptBlocks[i] = { _type: "docs.html", _key: `block-${i}`, html: blockToHtml(b), _label: label, text };
+		ptBlocks[i] = { _type: "docs.html", _key: `block-${i}`, html: blockToHtml(b), _label: label, text, _children: b.children, _markDefs: b.markDefs || [] };
 		i++;
 	}
 

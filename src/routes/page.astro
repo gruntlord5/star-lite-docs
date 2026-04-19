@@ -283,7 +283,7 @@ const isSplash = ptBlocks.some((b: any) => b?._type === "docs.hero");
 
 				var props = JSON.parse(wrap.dataset.blockProps || '{}');
 				var blockType = wrap.dataset.blockType || '';
-				var skipKeys = { _type: 1, _key: 1, _label: 1, html: 1, items: 1 };
+				var skipKeys = { _type: 1, _key: 1, _label: 1, html: 1, items: 1, _children: 1, _markDefs: 1, _source: 1 };
 				var form = document.createElement('div');
 				form.className = 'emdash-block-edit-form';
 
@@ -532,25 +532,46 @@ const isSplash = ptBlocks.some((b: any) => b?._type === "docs.hero");
 					if (block._type !== 'docs.html') return [block];
 					var label = block._label;
 					function span(t) { return [{ _type: 'span', text: t || '', marks: [] }]; }
+					function ctext(children) { return (children || []).map(function(c) { return c.text || ''; }).join(''); }
 					if (label === 'Heading') {
+						var useOrig = block._children && block.text === ctext(block._children);
 						return [{ _type: 'block', _key: block._key, style: 'h' + (block.level || 2),
-							children: span(block.text), markDefs: [] }];
+							children: useOrig ? block._children : span(block.text),
+							markDefs: useOrig ? (block._markDefs || []) : [] }];
 					}
 					if (label === 'Paragraph') {
+						if (block._source) {
+							var origText = block._source.map(function(bl) { return ctext(bl.children); }).join('\n\n');
+							if (block.text === origText) {
+								return block._source.map(function(bl, idx) {
+									return { _type: 'block', _key: block._key + (idx > 0 ? '-' + idx : ''),
+										style: bl.style || 'normal', children: bl.children, markDefs: bl.markDefs || [] };
+								});
+							}
+						}
+						if (block._children && block.text === ctext(block._children)) {
+							return [{ _type: 'block', _key: block._key, style: 'normal',
+								children: block._children, markDefs: block._markDefs || [] }];
+						}
 						return (block.text || '').split('\n\n').map(function(p, idx) {
 							return { _type: 'block', _key: block._key + (idx > 0 ? '-' + idx : ''),
 								style: 'normal', children: span(p), markDefs: [] };
 						});
 					}
 					if (label === 'Blockquote') {
+						var useOrigBq = block._children && block.text === ctext(block._children);
 						return [{ _type: 'block', _key: block._key, style: 'blockquote',
-							children: span(block.text), markDefs: [] }];
+							children: useOrigBq ? block._children : span(block.text),
+							markDefs: useOrigBq ? (block._markDefs || []) : [] }];
 					}
 					if (label === 'List' && Array.isArray(block.items)) {
 						return block.items.map(function(item, idx) {
+							var useOrigItem = item._children && item.text === ctext(item._children);
 							return { _type: 'block', _key: block._key + '-' + idx, style: 'normal',
 								listItem: item.type === 'number' ? 'number' : 'bullet',
-								level: item.level || 1, children: span(item.text), markDefs: [] };
+								level: item.level || 1,
+								children: useOrigItem ? item._children : span(item.text),
+								markDefs: useOrigItem ? (item._markDefs || []) : [] };
 						});
 					}
 					if (label === 'Divider') {
