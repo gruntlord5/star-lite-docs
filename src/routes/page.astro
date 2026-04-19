@@ -248,10 +248,10 @@ const isSplash = ptBlocks.some((b: any) => b?._type === "docs.hero");
 				btn.className = 'emdash-block-edit';
 				btn.textContent = 'Edit';
 				btn.type = 'button';
+				btn.contentEditable = 'false';
 				wrap.appendChild(btn);
 
 				// Make [data-sl-edit] elements contenteditable and sync to block props
-				// Check the wrap itself and its descendants
 				var editEls = Array.from(wrap.querySelectorAll('[data-sl-edit]'));
 				if (wrap.hasAttribute('data-sl-edit')) editEls.unshift(wrap);
 				editEls.forEach(function(el) {
@@ -262,7 +262,6 @@ const isSplash = ptBlocks.some((b: any) => b?._type === "docs.hero");
 						var props = {};
 						try { props = JSON.parse(wrap.dataset.blockProps || '{}'); } catch(e) {}
 						if (isHtml) {
-							// Clone and strip injected UI elements before reading innerHTML
 							var clone = el.cloneNode(true);
 							clone.querySelectorAll('.emdash-block-edit, .emdash-block-edit-form').forEach(function(n) { n.remove(); });
 							props[field] = clone.innerHTML;
@@ -528,50 +527,87 @@ const isSplash = ptBlocks.some((b: any) => b?._type === "docs.hero");
 					}
 				}).observe(statusEl, { childList: true, subtree: true });
 
+				function parseInlineHtml(parentEl) {
+					var children = [], markDefs = [], mi = 0;
+					function walk(node, marks) {
+						if (node.nodeType === 3) {
+							if (node.textContent) children.push({ _type: 'span', text: node.textContent, marks: marks.slice() });
+						} else if (node.nodeType === 1) {
+							var tag = node.tagName, m = marks.slice();
+							if (tag === 'STRONG' || tag === 'B') m.push('strong');
+							else if (tag === 'EM' || tag === 'I') m.push('em');
+							else if (tag === 'CODE') m.push('code');
+							else if (tag === 'U') m.push('underline');
+							else if (tag === 'S' || tag === 'DEL') m.push('strikethrough');
+							else if (tag === 'A') { var k = 'lk' + mi++; markDefs.push({ _key: k, _type: 'link', href: node.getAttribute('href') || '' }); m.push(k); }
+							for (var i = 0; i < node.childNodes.length; i++) walk(node.childNodes[i], m);
+						}
+					}
+					for (var i = 0; i < parentEl.childNodes.length; i++) walk(parentEl.childNodes[i], []);
+					return { children: children, markDefs: markDefs };
+				}
+
 				function docsHtmlToPt(block) {
 					if (block._type !== 'docs.html') return [block];
 					var label = block._label;
 					function span(t) { return [{ _type: 'span', text: t || '', marks: [] }]; }
-					function ctext(children) { return (children || []).map(function(c) { return c.text || ''; }).join(''); }
-					if (label === 'Heading') {
-						var useOrig = block._children && block.text === ctext(block._children);
-						return [{ _type: 'block', _key: block._key, style: 'h' + (block.level || 2),
-							children: useOrig ? block._children : span(block.text),
-							markDefs: useOrig ? (block._markDefs || []) : [] }];
+					var div = document.createElement('div');
+
+					if (label === 'Heading' && block.html) {
+						div.innerHTML = block.html;
+						var h = div.querySelector('h1,h2,h3,h4,h5,h6');
+						if (h) {
+							var p = parseInlineHtml(h);
+							return [{ _type: 'block', _key: block._key, style: 'h' + (block.level || 2),
+								children: p.children.length ? p.children : span(h.textContent), markDefs: p.markDefs }];
+						}
 					}
-					if (label === 'Paragraph') {
-						if (block._source) {
-							var origText = block._source.map(function(bl) { return ctext(bl.children); }).join('\n\n');
-							if (block.text === origText) {
-								return block._source.map(function(bl, idx) {
-									return { _type: 'block', _key: block._key + (idx > 0 ? '-' + idx : ''),
-										style: bl.style || 'normal', children: bl.children, markDefs: bl.markDefs || [] };
-								});
+					if (label === 'Paragraph' && block.html) {
+						div.innerHTML = block.html;
+						var ps = div.querySelectorAll('p');
+						if (ps.length > 0) {
+							return Array.from(ps).map(function(pel, idx) {
+								var p = parseInlineHtml(pel);
+								return { _type: 'block', _key: block._key + (idx > 0 ? '-' + idx : ''),
+									style: 'normal', children: p.children.length ? p.children : span(pel.textContent), markDefs: p.markDefs };
+							});
+						}
+					}
+					if (label === 'Blockquote' && block.html) {
+						div.innerHTML = block.html;
+						var bqp = div.querySelector('blockquote p') || div.querySelector('p') || div;
+						var p = parseInlineHtml(bqp);
+						return [{ _type: 'block', _key: block._key, style: 'blockquote',
+							children: p.children.length ? p.children : span(bqp.textContent), markDefs: p.markDefs }];
+					}
+					if (label === 'List' && block.html) {
+						div.innerHTML = block.html;
+						var items = [];
+						function walkList(parent, depth) {
+							for (var c = 0; c < parent.children.length; c++) {
+								if (parent.children[c].tagName !== 'LI') continue;
+								var li = parent.children[c];
+								var tmp = document.createElement('span');
+								for (var n = 0; n < li.childNodes.length; n++) {
+									var nd = li.childNodes[n];
+									if (nd.nodeType === 1 && (nd.tagName === 'UL' || nd.tagName === 'OL')) continue;
+									tmp.appendChild(nd.cloneNode(true));
+								}
+								var p = parseInlineHtml(tmp);
+								items.push({ children: p.children.length ? p.children : span(tmp.textContent), markDefs: p.markDefs,
+									level: depth, type: parent.tagName === 'OL' ? 'number' : 'bullet' });
+								for (var n = 0; n < li.children.length; n++) {
+									if (li.children[n].tagName === 'UL' || li.children[n].tagName === 'OL') walkList(li.children[n], depth + 1);
+								}
 							}
 						}
-						if (block._children && block.text === ctext(block._children)) {
-							return [{ _type: 'block', _key: block._key, style: 'normal',
-								children: block._children, markDefs: block._markDefs || [] }];
+						for (var i = 0; i < div.children.length; i++) {
+							if (div.children[i].tagName === 'UL' || div.children[i].tagName === 'OL') walkList(div.children[i], 1);
 						}
-						return (block.text || '').split('\n\n').map(function(p, idx) {
-							return { _type: 'block', _key: block._key + (idx > 0 ? '-' + idx : ''),
-								style: 'normal', children: span(p), markDefs: [] };
-						});
-					}
-					if (label === 'Blockquote') {
-						var useOrigBq = block._children && block.text === ctext(block._children);
-						return [{ _type: 'block', _key: block._key, style: 'blockquote',
-							children: useOrigBq ? block._children : span(block.text),
-							markDefs: useOrigBq ? (block._markDefs || []) : [] }];
-					}
-					if (label === 'List' && Array.isArray(block.items)) {
-						return block.items.map(function(item, idx) {
-							var useOrigItem = item._children && item.text === ctext(item._children);
+						return items.map(function(it, idx) {
 							return { _type: 'block', _key: block._key + '-' + idx, style: 'normal',
-								listItem: item.type === 'number' ? 'number' : 'bullet',
-								level: item.level || 1,
-								children: useOrigItem ? item._children : span(item.text),
-								markDefs: useOrigItem ? (item._markDefs || []) : [] };
+								listItem: it.type === 'number' ? 'number' : 'bullet',
+								level: it.level || 1, children: it.children, markDefs: it.markDefs };
 						});
 					}
 					if (label === 'Divider') {
