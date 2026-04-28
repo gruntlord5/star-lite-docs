@@ -66,7 +66,9 @@ Click "Edit as MD" to switch to a full-page markdown textarea. All blocks round-
 
 ### Cloudflare Workers
 
-The CLI handles everything - D1, R2, deploy, admin user creation, and seed content:
+Use the one click deploy button [![Deploy to Cloudflare Workers](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/gruntlord5/star-lite-docs/tree/main/starter-cloudflare)
+
+Or let the CLI handles everything - D1, R2, deploy, admin user creation, and seed content:
 
 ```bash
 bun create star-lite-docs   # choose Cloudflare Workers → Start now
