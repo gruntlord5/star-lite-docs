@@ -8,6 +8,7 @@
 const pathname = Astro.url.pathname;
 const slug = pathname.replace(/^\/|\/$/g, "");
 const isMarkdownEditor = Astro.url.searchParams.get("editor") === "markdown";
+const user = (Astro.locals as any).user;
 const hide = pathname.startsWith("/_emdash/");
 ---
 
@@ -19,9 +20,11 @@ const hide = pathname.startsWith("/_emdash/");
 			</button>
 			<span id="copy-toast" class="ha-toast" role="status" aria-live="polite" hidden />
 		</span>
-		<a href={isMarkdownEditor ? pathname : `${pathname}?editor=markdown`} class="sl-link-button secondary">
-			{isMarkdownEditor ? "Edit Visually" : "Edit as MD"}
-		</a>
+		{user && (
+			<a href={isMarkdownEditor ? pathname : `${pathname}?editor=markdown`} class="sl-link-button secondary">
+				{isMarkdownEditor ? "Edit Visually" : "Edit as MD"}
+			</a>
+		)}
 	</div>
 )}
 

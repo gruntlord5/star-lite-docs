@@ -106,7 +106,7 @@ function getNextIndex() { return _groupIndex++; }
 						</a>
 					) : (
 						<details
-							open={flattenSidebar(entry.entries).some((i) => i.isCurrent) || isGroupPageCurrent(entry.label) || hasCurrentLinkableDescendant(entry.entries) || (!LINKABLE_GROUPS.has(entry.label) && !entry.collapsed)}
+							open={flattenSidebar(entry.entries).some((i) => i.isCurrent) || isGroupPageCurrent(entry.label) || hasCurrentLinkableDescendant(entry.entries)}
 						>
 							<summary>
 								{LINKABLE_GROUPS.has(entry.label) ? (
